@@ -1,6 +1,8 @@
 import os
 import re
+import random
 
+from typing import List
 from sklearn.model_selection import train_test_split
 
 MAP_TASK_DIR = "transcripts/"
@@ -20,16 +22,20 @@ def transform_files():
         with open(get_abs_path(os.path.join(MAP_TASK_DIR, file)), "r") as stream:
             lines = stream.readlines()[3:]
             for line in lines:
-                line.replace("\n", "")
+                line = line.replace("\n", "")
                 new_speaker = line[0]
 
                 if new_speaker == speaker or speaker == "":
-                    output += line[1:]
+                    output += line[2:]
+                    if speaker == "":
+                        speaker = new_speaker
                 else:
                     output += "\n"
-                    output += line[1:]
+                    output += line[2:]
                     speaker = new_speaker
+
         output = re.sub('[^\S\r\n]+', ' ', output)
+
         write_txt(output, get_abs_path(
             os.path.join(OUTPUT_MAP_TASK_DIR, file)))
 
@@ -65,6 +71,12 @@ def generate_train_test_split():
 
     write_txt(train_idxs, train_file)
     write_txt(test_idxs, test_file)
+
+
+def weighted_random(choices, first=1, last=1):
+    choices = [0] * first + \
+        [x for x in range(1, len(choices)-1)] + [len(choices)-1] * last
+    return random.choice(choices)
 
 
 if __name__ == "__main__":

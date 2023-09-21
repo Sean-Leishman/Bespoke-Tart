@@ -3,9 +3,9 @@
 ## TODO
 - [x] Download data - 19/9/2023
 - [x] Organise Dataset and Dataloader classes - 20/9/2023
-- [x] Have some sort of default class structure for training model - 20/9/2023 
-- [] Reparse data in order to have each speaker's utterance be a single sentence 
-- [] Within dataset separate speaker utterances so that non turn shift utterances are used 
+- [x] Have some sort of default class structure for training model - 20/9/2023
+- [x] Reparse data in order to have each speaker's utterance be a single sentence 
+- [x] Within dataset separate speaker utterances so that non turn shift utterances are used 
 - [] Implement other baselines and embeddings 
 - [] Implement a thourough classifier 
 - [] Use other datasets 
