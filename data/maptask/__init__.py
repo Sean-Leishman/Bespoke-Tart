@@ -33,6 +33,11 @@ class MapTaskDataset(Dataset):
     def read_dialog(self):
         filename = get_abs_path(os.path.join(SPLITS_DIR, self.split + ".txt"))
         dialog_files = os.listdir(get_abs_path(OUTPUT_MAP_TASK_DIR))
+        
+        # Parse transcripts and save in another directory if not done yet
+        if len(dialog_files) == 0:
+            transform_files() 
+            dialog_files = os.listdir(get_abs_path(OUTPUT_MAP_TASK_DIR))
 
         dialog = []
         labels = []

@@ -12,8 +12,14 @@ conda create -n diss python=3
 conda activate diss
 ```
 ### Install Dependencies
+If a GPU is avaialble: 
 ```
-conda install pytorch pytorch-cuda=12.1 -c pytorch-nightly -c nvidia numpy transformers scikit-learn
+conda install pytorch pytorch-cuda=12.1 -c pytorch-nightly -c nvidia 
+pip install -r requirements .txt
+```
+If a GPU is not available:
+``` 
+conda install pytorch torchvision torchaudio -c pytorch -c conda-forge
 pip install -r requirements .txt
 ```
 ### Download Data ([HCRC Maptask](https://groups.inf.ed.ac.uk/maptask/transcripts/))
@@ -24,3 +30,7 @@ cd data/maptask
 ```
 Transcripts are located at `data/maptask/transcripts/`
 
+### Train Model 
+```
+python train.py
+```
