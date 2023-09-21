@@ -1,4 +1,8 @@
 import torch
+import os
+import json
+import numpy as np
+
 from tqdm import tqdm
 
 
@@ -11,8 +15,26 @@ class Trainer:
         self.epochs = config.epoch_size
         self.device = config.device
 
+        self.history = {
+            "train_loss": [],
+            "val_loss": [],
+            "val_correct": [],
+        }
+
+        self.best = {
+            'epoch': 0,
+            'config': config,
+        }
+
+        self.save_path = os.path.join(config.save_path)
+        if not os.path.isdir(self.save_path):
+            os.mkdir(self.save_path)
+
+        with open(os.path.join(self.save_path, "config.json"), "w") as config_file:
+            json.dump(vars(config), config_file)
+
     def train(self, train_dl):
-        progress_bar = tqdm(range(0, self.epochs))
+        progress_bar = tqdm(range(0, self.epochs), desc='Epoch   ')
 
         for idx in progress_bar:
             avg_train_loss = self.train_epoch(train_dl)
@@ -41,4 +63,13 @@ class Trainer:
             total_loss += loss.item()
         progress_bar.close()
         avg_loss = total_loss / len(train_dl)
+
         return avg_loss
+
+    def save_training(self, path):
+        torch.save(self.best, path)
+
+    def save_history(self, path):
+        np.save(os.path.join(path, "train_loss"), self.history["train_loss"])
+        np.save(os.path.join(path, "val_loss"), self.history["val_loss"])
+        np.save(os.path.join(path, "val_correct"), self.history["val_correct"])

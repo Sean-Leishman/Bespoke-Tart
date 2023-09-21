@@ -1,18 +1,20 @@
 import torch
+import logging
 
 from transformers import BertConfig, BertModel
 
 
 class Bert(torch.nn.Module):
-    def __init__(self, pretrained_model_name="bert-base-uncased", freeze_bert=False, num_labels=1, config=None):
+    def __init__(self, pretrained_model_name="bert-base-uncased", bert_finetuning=True, num_labels=1, config=None):
         super(Bert, self).__init__()
 
         self.bert = BertModel.from_pretrained(pretrained_model_name)
         self.bert.to(config.device)
+        self.logger = logging.getLogger(__name__)
 
-        if freeze_bert:
+        if not bert_finetuning:
+            self.logger.info('BERT parameters frozen')
             for param in self.bert.parameters():
-
                 param.requires_grad = False
 
         self.classifier = torch.nn.Linear(
@@ -23,4 +25,5 @@ class Bert(torch.nn.Module):
             input_ids, attention_mask=attention_mask, token_type_ids=None)
         hidden_state = output[0]
         pooled_output = hidden_state[:, 0]
+
         return self.classifier(pooled_output)
