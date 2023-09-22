@@ -22,6 +22,12 @@ If a GPU is not available:
 conda install pytorch torchvision torchaudio -c pytorch -c conda-forge
 pip install -r requirements .txt
 ```
+
+### Install as a module
+```
+pip install -e . 
+```
+
 ### Download Data ([HCRC Maptask](https://groups.inf.ed.ac.uk/maptask/transcripts/))
 1. Retreive files
 ```
