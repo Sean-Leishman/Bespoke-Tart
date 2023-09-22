@@ -6,13 +6,13 @@
 - [x] Have some sort of default class structure for training model - 20/9/2023
 - [x] Reparse data in order to have each speaker's utterance be a single sentence 
 - [x] Within dataset separate speaker utterances so that non turn shift utterances are used 
-- [] Implement other baselines and embeddings 
-- [] Implement a thourough classifier 
-- [] Use other datasets 
-- [] Implement more CLI arguments
-- [] Develop an evaluation framework 
-- [] Generate documentation as experiments will be carried out
-- [] Save and load model checkpoints for stopping training 
+- [ ] Implement other baselines and embeddings 
+- [ ] Implement a thourough classifier 
+- [ ] Use other datasets 
+- [ ] Implement more CLI arguments
+- [ ] Develop an evaluation framework 
+- [ ] Generate documentation as experiments will be carried out
+- [ ] Save and load model checkpoints for stopping training 
 
 ## HCRC
 1. Download data to transcripts
