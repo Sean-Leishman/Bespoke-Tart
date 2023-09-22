@@ -22,6 +22,7 @@ def build_parser():
     parser.add_argument('--batch-size', type=int, default=32)
     parser.add_argument('--learning-rate', type=float, default=0.0002)
     parser.add_argument('--bert-finetuning', type=str, default='false')
+    parser.add_argument('--save-path', type=str, default='model/')
 
     return parser.parse_args()
 
@@ -55,8 +56,8 @@ def main(config):
 
 if __name__ == "__main__":
     config = build_parser()
-    config.device = torch.device("cuda" if torch.cuda.is_available() and (
-        config.cuda == "true") else "cpu")
+    config.device = "cuda" if torch.cuda.is_available() and (
+        config.cuda == "true") else "cpu"
 
     build_logger()
 

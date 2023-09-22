@@ -3,7 +3,7 @@ import os
 import torch
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 
-from .maptask import MapTaskDataset
+from data.maptask import MapTaskDataset
 
 
 def get_abs_path(filepath):

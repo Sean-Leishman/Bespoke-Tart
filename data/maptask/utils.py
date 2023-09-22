@@ -75,7 +75,7 @@ def generate_train_test_split():
 
 def weighted_random(choices, first=1, last=1):
     choices = [0] * first + \
-        [x for x in range(1, len(choices)-1)] + [len(choices)-1] * last
+        [x for x in range(1, len(choices)-2)] + [len(choices)-1] * last
     return random.choice(choices)
 
 

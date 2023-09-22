@@ -11,7 +11,7 @@ from transformers import BertTokenizer
 
 from sklearn.model_selection import train_test_split
 
-from .utils import get_abs_path, transform_files, weighted_random, SPLITS_DIR, OUTPUT_MAP_TASK_DIR
+from data.maptask.utils import get_abs_path, transform_files, weighted_random, SPLITS_DIR, OUTPUT_MAP_TASK_DIR
 
 
 class MapTaskDataset(Dataset):
@@ -43,7 +43,7 @@ class MapTaskDataset(Dataset):
 
         dialog = []
         labels = []
-        nontrp_queue = 1
+        nontrp_queue = 0
         with open(filename, "r") as indexes:
             for index in indexes:
                 dialog_file = get_abs_path(os.path.join(
@@ -55,17 +55,13 @@ class MapTaskDataset(Dataset):
                         curr_dialog.append(line.strip())
                         labels.append(1)
 
-                        for i in range(nontrp_queue):
-                            # Add a non-trp
-                            nontrp = self.add_non_trp(line.strip())
-                            if len(nontrp) == 0:
-                                nontrp_queue += 1
-                            else:
-                                curr_dialog.append(nontrp)
-                                labels.append(0)
-                                nontrp_queue -= 1
+                        nontrp = self.add_non_trp(line.strip())
+                        if len(nontrp) != 0:
+                            curr_dialog.append(nontrp)
+                            labels.append(0)
 
                 dialog.extend(curr_dialog)
+        print(dialog, labels)
         return dialog, labels
 
     """
@@ -77,9 +73,13 @@ class MapTaskDataset(Dataset):
 
     def add_non_trp(self, ipu):
         words = ipu.split(" ")
-        start_index = weighted_random(range(0, len(words) - 2), first=10)[0]
+
+        if len(words) < 2:
+            return ""
+
+        start_index = weighted_random(range(0, len(words) - 2), first=10)
         length = weighted_random(
-            range(1, len(words) - start_index), last=10)[0]
+            range(1, len(words) - start_index), first=0,  last=10)
         return " ".join(words[start_index: start_index+length])
 
     def tokenize(self):

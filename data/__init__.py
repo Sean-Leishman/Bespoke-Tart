@@ -1,1 +1,1 @@
-from .transcript_dm import TranscriptDataset
+from data.transcript_dm import TranscriptDataset

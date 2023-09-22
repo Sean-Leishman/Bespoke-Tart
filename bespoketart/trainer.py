@@ -13,7 +13,7 @@ class Trainer:
         self.optimizer = optimizer
         self.config = config
         self.epochs = config.epoch_size
-        self.device = config.device
+        self.device = torch.device(config.device)
 
         self.history = {
             "train_loss": [],
