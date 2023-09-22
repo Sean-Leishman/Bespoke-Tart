@@ -23,7 +23,12 @@ conda install pytorch torchvision torchaudio -c pytorch -c conda-forge
 pip install -r requirements .txt
 ```
 
-### Install as a module
+### Install Data managing package 
+```
+cd data && pip install -e . 
+```
+
+### Install BespokeTart as a module
 ```
 pip install -e . 
 ```
