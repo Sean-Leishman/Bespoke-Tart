@@ -2,6 +2,7 @@ import os
 import re
 import numpy as np
 import warnings
+import logging
 from typing import List
 
 import torch
@@ -16,6 +17,8 @@ from data.maptask.utils import get_abs_path, transform_files, weighted_random, S
 
 class MapTaskDataset(Dataset):
     def __init__(self, split="train", tokenizer=BertTokenizer.from_pretrained("bert-base-uncased")):
+        self.logger = logging.getLogger(__name__)
+
         self.split = split
         self.dialogs, self.labels = self.read_dialog()
         self.dialog_tokens = None
@@ -33,6 +36,8 @@ class MapTaskDataset(Dataset):
                 'labels': self.labels[idx]}
 
     def read_dialog(self):
+        self.logger.info(f'data ({self.split}): loading MapTask Data')
+
         filename = get_abs_path(os.path.join(SPLITS_DIR, self.split + ".txt"))
         dialog_files = os.listdir(get_abs_path(OUTPUT_MAP_TASK_DIR))
 
@@ -43,7 +48,6 @@ class MapTaskDataset(Dataset):
 
         dialog = []
         labels = []
-        nontrp_queue = 0
         with open(filename, "r") as indexes:
             for index in indexes:
                 dialog_file = get_abs_path(os.path.join(
@@ -61,7 +65,9 @@ class MapTaskDataset(Dataset):
                             labels.append(0)
 
                 dialog.extend(curr_dialog)
-        print(dialog, labels)
+
+        self.logger.info(
+            f"data ({self.split}): done loading {len(curr_dialog)} sentences of maptask data")
         return dialog, labels
 
     """
@@ -83,11 +89,14 @@ class MapTaskDataset(Dataset):
         return " ".join(words[start_index: start_index+length])
 
     def tokenize(self):
-        return self.tokenizer(self.dialogs,
-                              padding="max_length",
-                              truncation=True,
-                              max_length=512,
-                              return_tensors="pt")
+        self.logger.info(f"data ({self.split}): tokenizing maptask data")
+        tokens = self.tokenizer(self.dialogs,
+                                padding="max_length",
+                                truncation=True,
+                                max_length=512,
+                                return_tensors="pt")
+        self.logger.info(f"data ({self.split}): done tokenizing maptask data")
+        return tokens
 
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ DATASETS = [MapTaskDataset]
 
 
 class TranscriptDataset(Dataset):
-    def __init__(self, split="train"):
+    def __init__(self, split="train", tokenizer=None):
         self.dataset = ConcatDataset([x(split) for x in DATASETS])
 
     def __len__(self):
