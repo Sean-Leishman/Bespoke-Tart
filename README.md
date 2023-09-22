@@ -43,5 +43,6 @@ Transcripts are located at `data/maptask/transcripts/`
 
 ### Train Model 
 ```
+cd bespoketart
 python train.py
 ```
