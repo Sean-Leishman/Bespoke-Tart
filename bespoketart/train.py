@@ -33,7 +33,8 @@ def build_parser():
     parser.add_argument('--bert-finetuning', type=str, default='false',
                         help='true/false if BERT should be finetuned')
     parser.add_argument('--bert-pretraining', type=str,
-                        default='bert-base-uncased')
+                        default='bert-base-uncased',
+                        help="name of pretrained BERT model")
 
     parser.add_argument('--epoch-size', type=int, default=10)
     parser.add_argument('--batch-size', type=int, default=128)
