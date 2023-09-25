@@ -1,11 +1,12 @@
 # BEspoke taRT  
 
-## Steps
-### Machine Guidance
+## Machine Guidance
 Tested on a Debian-based system with versions as listed below. 
 
+## General Installation 
 ### Prerequisties
 1. `conda`
+
 ### Setup Envrionment
 ```
 conda create -n diss python=3
@@ -33,6 +34,7 @@ cd data && pip install -e .
 pip install -e . 
 ```
 
+## Training the Model 
 ### Download Data ([HCRC Maptask](https://groups.inf.ed.ac.uk/maptask/transcripts/))
 1. Retreive files
 ```
@@ -45,4 +47,19 @@ Transcripts are located at `data/maptask/transcripts/`
 ```
 cd bespoketart
 python train.py
+```
+
+## Running ipynb Analysis
+```
+# Primarily suitable for use in the base envrionment
+conda activate base
+conda install jupyter_notebook
+conda decativate
+
+# If torch etc. is installed in another envrionment
+conda activate diss
+conda install ipykernel
+
+cd nb_notebooks
+jupyter notebook
 ```
