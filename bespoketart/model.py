@@ -5,7 +5,8 @@ from transformers import BertModel, DistilBertModel, AutoTokenizer
 
 
 class DistilledBert(torch.nn.Module):
-    def __init__(self, pretrained_model_name="distilbert-base-uncased", bert_finetuning=True, num_labels=1, config=None):
+    def __init__(self, pretrained_model_name="distilbert-base-uncased",
+                 bert_finetuning=True, num_labels=1, config=None):
         super(DistilledBert, self).__init__()
 
         self.tokenizer = AutoTokenizer.from_pretrained(
@@ -23,13 +24,16 @@ class DistilledBert(torch.nn.Module):
         self.classifier = torch.nn.Linear(
             self.bert.config.hidden_size, num_labels)
 
+        self.output_activation = torch.nn.Sigmoid()
+
     def forward(self, input_ids, attention_mask=None, token_type_ids=None):
         output = self.bert(
             input_ids, attention_mask=attention_mask)
         hidden_state = output[0]
         pooled_output = hidden_state[:, 0]
 
-        return self.classifier(pooled_output)
+        final_output = self.classifier(pooled_output)
+        return self.output_activation(final_output)
 
     def get_tokenizer(self):
         return self.tokenizer
@@ -52,6 +56,7 @@ class Bert(torch.nn.Module):
 
         self.classifier = torch.nn.Linear(
             self.bert.config.hidden_size, num_labels)
+        self.output_activation = torch.nn.Sigmoid()
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None):
         output = self.bert(
