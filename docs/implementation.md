@@ -34,6 +34,7 @@ Achieves (format: START->END):
 - train_loss=0.6654->0.6198
 - validation_loss=0.6550->0.6149
 - validation_correct=0.713654->0.90 
+
 Appears to be a good level of prediction. Not a huge amount of loss improvement.
 Have to compare against some baseline or distribution-based approximation. 
 Threshold of prediction could be improved through validation 
