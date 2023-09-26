@@ -61,6 +61,10 @@ def get_latest_model(path):
     return os.path.join(path, latest_model)
 
 
+def collate(batches):
+    return
+
+
 def main(config):
     # model = Bert(
     #    pretrained_model_name='bert-base-uncased',
@@ -103,9 +107,12 @@ def main(config):
     test_dl = DataLoader(TranscriptDataset(
         "test", model.get_tokenizer()), batch_size=config.batch_size)
 
+    print(next(iter(train_dl)))
+
     logging.getLogger(__name__).info("model: train model")
     history = trainer.train(train_dl, test_dl)
 
+    print(model.get_tokenizer().is_fast)
     return history
 
 

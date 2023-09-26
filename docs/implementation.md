@@ -18,6 +18,7 @@
 - [ ] Put more consideration into choice of learning rate 
 - [ ] Show results within ipynb via graphs
 - [ ] Integrate some system that separates model results based on date/type -> could just be done manually or by default with datetime. 
+- [ ] Implementation of tokenzier in order to train the vocabulary 
 
 ## Data
 ### HCRC

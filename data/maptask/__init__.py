@@ -16,8 +16,9 @@ from data.maptask.utils import get_abs_path, transform_files, weighted_random, S
 
 
 class MapTaskDataset(Dataset):
-    def __init__(self, split="train", tokenizer=BertTokenizer.from_pretrained("bert-base-uncased")):
+    def __init__(self, split="train", tokenizer=BertTokenizer.from_pretrained("bert-base-uncased"), config=None):
         self.logger = logging.getLogger(__name__)
+        self.config = config
 
         self.split = split
         self.dialogs, self.labels = self.read_dialog()
@@ -59,9 +60,9 @@ class MapTaskDataset(Dataset):
                         curr_dialog.append(line.strip())
                         labels.append(1)
 
-                        nontrp = self.add_non_trp(line.strip())
-                        if len(nontrp) != 0:
-                            curr_dialog.append(nontrp)
+                        for word in range(1, len(line.split(" "))-1):
+                            dialog.append(
+                                " ".join(line.split(" ")[0:word]).strip())
                             labels.append(0)
 
                 dialog.extend(curr_dialog)
