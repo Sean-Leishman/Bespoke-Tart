@@ -62,7 +62,13 @@ def get_latest_model(path):
 
 
 def collate(batches):
-    return
+    collated = {}
+    for dir in batches:
+        for k, v in dir.items():
+            if k not in collated:
+                collated[k] = torch.tensor([])
+            collated[k] = torch.cat((collated[k], v.unsqueeze(0)), 0)
+    return collated
 
 
 def main(config):
