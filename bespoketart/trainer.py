@@ -148,7 +148,7 @@ class Trainer:
                 loss = self.criterion(output, labels)
 
                 total_loss += float(loss)
-                total_count += 1
+                total_count += len(labels)
 
                 predicted_trp = (output > 0.5).float()
                 correct_predictions = (

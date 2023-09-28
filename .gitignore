@@ -4,3 +4,4 @@ venv/
 data/maptask/transcripts 
 data/maptask/parsed_transcripts 
 model/
+trained_models/
