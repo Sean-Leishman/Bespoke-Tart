@@ -1,17 +1,8 @@
 import os
-import re
-import numpy as np
-import warnings
 import logging
-from typing import List
 
-import torch
 from torch.utils.data import Dataset
-
 from transformers import BertTokenizer
-
-from sklearn.model_selection import train_test_split
-
 from data.maptask.utils import get_abs_path, transform_files, weighted_random, SPLITS_DIR, OUTPUT_MAP_TASK_DIR
 
 
@@ -98,6 +89,9 @@ class MapTaskDataset(Dataset):
                                 return_tensors="pt")
         self.logger.info(f"data ({self.split}): done tokenizing maptask data")
         return tokens
+
+    def get_tokenizer(self):
+        return self.tokenizer
 
 
 if __name__ == "__main__":

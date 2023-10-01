@@ -3,5 +3,6 @@ venv/
 **/.ipynb_checkpoints/
 data/maptask/transcripts 
 data/maptask/parsed_transcripts 
+data/edacc/
 model/
 trained_models/
