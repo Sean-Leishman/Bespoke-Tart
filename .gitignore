@@ -6,3 +6,5 @@ data/maptask/parsed_transcripts
 data/edacc/
 model/
 trained_models/
+bespoketart.egg-info/
+build/

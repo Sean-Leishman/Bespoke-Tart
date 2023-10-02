@@ -30,6 +30,8 @@ def build_parser():
     parser.add_argument('--save-path', type=str, default='model/',
                         help="model weights and config options save directory")
 
+    parser.add_argument('--bert-type', type=str, default='distilbert',
+                        help="choose which BERT version to use (bert, distilbert)")
     parser.add_argument('--bert-finetuning', type=str, default='false',
                         help='true/false if BERT should be finetuned')
     parser.add_argument('--bert-pretraining', type=str,
@@ -41,6 +43,9 @@ def build_parser():
     parser.add_argument('--learning-rate', type=float, default=0.0002)
     parser.add_argument('--early-stop', type=int, default=5,
                         help='number of iterations without improvement for early stop')
+
+    parser.add_argument('--evaluate', type=str, default='false',
+                        help='model should only be evaluated. load-model and load-path should be set')
 
     return parser.parse_args()
 
@@ -91,10 +96,24 @@ def main(config):
 
         logging.getLogger(__name__).info(f"Loaded config: {config}")
 
-    model = DistilledBert(
-        bert_finetuning=True if config.bert_finetuning == 'true' else False,
-        config=config,
-    )
+    if config.bert_type == 'distilbert':
+        logging.getLogger(__name__).info(f"Loaded model: distilbert")
+        model = DistilledBert(
+            bert_finetuning=True if config.bert_finetuning == 'true' else False,
+            config=config,
+        )
+    elif config.bert_type == 'bert':
+        logging.getLogger(__name__).info(f"Loaded model: bert")
+        model = Bert(bert_finetuning=True if config.bert_finetuning == 'true' else False,
+                     config=config)
+    else:
+        logging.getLogger(__name__).info(
+            f"Loaded model: invalid bert name {config.bert_type}. loaded distilbert")
+        model = DistilledBert(
+            bert_finetuning=True if config.bert_finetuning == 'true' else False,
+            config=config,
+        )
+
     model.to(config.device)
 
     criterion = torch.nn.BCEWithLogitsLoss()
@@ -108,17 +127,26 @@ def main(config):
         trainer = Trainer(model=model, criterion=criterion,
                           optimizer=optimizer, config=config)
 
-    train_dl = DataLoader(TranscriptDataset(
-        "train", model.get_tokenizer()), batch_size=config.batch_size)
-    test_dl = DataLoader(TranscriptDataset(
-        "test", model.get_tokenizer()), batch_size=config.batch_size)
+    if not config.evaluate:
+        train_dl = DataLoader(TranscriptDataset(
+            "train", model.get_tokenizer()), batch_size=config.batch_size)
+        test_dl = DataLoader(TranscriptDataset(
+            "test", model.get_tokenizer()), batch_size=config.batch_size)
 
-    print(next(iter(train_dl)))
+        logging.getLogger(__name__).info("model: train model")
+        history = trainer.train(train_dl, test_dl)
+    else:
+        test_dl = DataLoader(TranscriptDataset(
+            "test", model.get_tokenizer()), batch_size=config.batch_size)
 
-    logging.getLogger(__name__).info("model: train model")
-    history = trainer.train(train_dl, test_dl)
+        logging.getLogger(__name__).info("model: evaluate model")
+        if not config.load_model:
+            logging.getLogger(__name__).error(
+                "model: model is not being loaded")
+            return None
 
-    print(model.get_tokenizer().is_fast)
+        history = trainer.validate(test_dl)
+
     return history
 
 

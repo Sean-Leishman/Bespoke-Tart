@@ -21,11 +21,21 @@ class MapTaskDataset(Dataset):
     def __len__(self):
         return len(self.dialog_tokens) if self.dialog_tokens is not None else len(self.dialogs)
 
-    def __getitem__(self, idx):
-        return {'input_ids': self.tokens['input_ids'][idx],
+    """
+        Of the form as below
+        {'input_ids': self.tokens['input_ids'][idx],
                 'token_type_ids': self.tokens['token_type_ids'][idx],
                 'attention_mask': self.tokens['attention_mask'][idx],
                 'labels': self.labels[idx]}
+        But require robustness due to choice of tokenizer
+    """
+
+    def __getitem__(self, idx):
+        dict = {}
+        for key, value in self.tokens.items():
+            dict[key] = value[idx]
+        dict['labels'] = self.labels[idx]
+        return dict
 
     def read_dialog(self):
         self.logger.info(f'data ({self.split}): loading MapTask Data')

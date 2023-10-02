@@ -24,8 +24,7 @@ class TranscriptDataset(Dataset):
             self.datasets.append(dataset)
             self.tokenizer = dataset.get_tokenizer()
 
-        self.dataset = ConcatDataset(
-            [x(split=split, tokenizer=tokenizer) for x in DATASETS])
+        self.dataset = ConcatDataset(self.datasets)
 
     def __len__(self):
         return len(self.dataset)

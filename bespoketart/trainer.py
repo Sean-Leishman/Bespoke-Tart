@@ -155,8 +155,10 @@ class Trainer:
                     predicted_trp == labels).float().sum().item()
                 total_correct += correct_predictions
 
+                predicted_trp_1 = predicted_trp.sum().item()
+
                 progress_bar.set_postfix_str(
-                    f'avg_valid_loss= {total_loss/total_count: .4f}, avg_valid_correct={total_correct/total_count: .4f}')
+                    f'pred_1={predicted_trp_1} avg_valid_loss={total_loss/total_count: .4f}, avg_valid_correct={total_correct/total_count: .4f}')
 
             progress_bar.close()
         self.model.train()

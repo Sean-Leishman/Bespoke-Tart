@@ -5,12 +5,12 @@ from transformers import BertModel, DistilBertModel, AutoTokenizer
 
 
 class DistilledBert(torch.nn.Module):
-    def __init__(self, pretrained_model_name="distilbert-base-uncased",
+    def __init__(self,
+                 pretrained_model_name="distilbert-base-uncased",
                  bert_finetuning=True, num_labels=1, config=None):
         super(DistilledBert, self).__init__()
 
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            'distilbert-base-uncased')
+        self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name)
 
         self.bert = DistilBertModel.from_pretrained(pretrained_model_name)
         self.bert.to(config.device)
@@ -43,7 +43,7 @@ class Bert(torch.nn.Module):
     def __init__(self, pretrained_model_name="bert-base-uncased", bert_finetuning=True, num_labels=1, config=None):
         super(Bert, self).__init__()
 
-        self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+        self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name)
 
         self.bert = BertModel.from_pretrained(pretrained_model_name)
         self.bert.to(config.device)
