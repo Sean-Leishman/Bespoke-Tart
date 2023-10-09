@@ -1,62 +1,52 @@
-This is BibTeX, Version 0.99d (TeX Live 2019/Debian)
+This is BibTeX, Version 0.99d (TeX Live 2022/dev/Debian)
 Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: skeleton.aux
-White space in argument---line 15 of file skeleton.aux
- : \citation{Fry
- :               1975}
-I'm skipping whatever remains of this command
 The style file: plainnat.bst
 Database file #1: mybibfile.bib
-Warning--I didn't find a database entry for "LevTor2015"
-Warning--I didn't find a database entry for "IndLev2004"
-Warning--I didn't find a database entry for "Bates2003"
 Warning--I didn't find a database entry for ""
-Warning--I didn't find a database entry for "HelEdl2010"
-Warning--I didn't find a database entry for "Duncan1972"
-Warning--I didn't find a database entry for "Duncan1974"
 Warning--I didn't find a database entry for "P1"
 Warning--empty booktitle in Sacks1974
 Warning--can't use both volume and number fields in Sacks1974
 Warning--empty publisher in Sacks1974
-You've used 2 entries,
+You've used 10 entries,
             2773 wiz_defined-function locations,
-            622 strings with 5207 characters,
-and the built_in function-call counts, 1105 in all, are:
-= -- 102
-> -- 51
-< -- 3
-+ -- 17
-- -- 15
-* -- 73
-:= -- 152
-add.period$ -- 7
-call.type$ -- 2
-change.case$ -- 11
-chr.to.int$ -- 2
-cite$ -- 7
-duplicate$ -- 67
-empty$ -- 84
-format.name$ -- 19
-if$ -- 247
+            678 strings with 6573 characters,
+and the built_in function-call counts, 4885 in all, are:
+= -- 445
+> -- 266
+< -- 10
++ -- 91
+- -- 81
+* -- 383
+:= -- 740
+add.period$ -- 31
+call.type$ -- 10
+change.case$ -- 56
+chr.to.int$ -- 10
+cite$ -- 23
+duplicate$ -- 228
+empty$ -- 394
+format.name$ -- 101
+if$ -- 1028
 int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 3
-newline$ -- 18
-num.names$ -- 8
-pop$ -- 28
+missing$ -- 11
+newline$ -- 58
+num.names$ -- 40
+pop$ -- 105
 preamble$ -- 1
-purify$ -- 9
+purify$ -- 46
 quote$ -- 0
-skip$ -- 63
+skip$ -- 189
 stack$ -- 0
-substring$ -- 26
-swap$ -- 26
+substring$ -- 210
+swap$ -- 34
 text.length$ -- 2
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 17
+type$ -- 105
 warning$ -- 3
-while$ -- 7
+while$ -- 45
 width$ -- 0
-write$ -- 33
-(There was 1 error message)
+write$ -- 137
+(There were 5 warnings)
