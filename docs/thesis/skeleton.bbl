@@ -1,22 +1,31 @@
-\begin{thebibliography}{10}
+\begin{thebibliography}{20}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
   \providecommand{\doi}[1]{doi: #1}\else
   \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
 
-\bibitem[Bates et~al.(2003)Bates, D’Amico, Jacobsen, Sz{\'e}kely, Andonova,
-  Devescovi, Herron, Ching~Lu, Pechmann, Pl{\'e}h, et~al.]{Bates2003}
-Elizabeth Bates, Simona D’Amico, Thomas Jacobsen, Anna Sz{\'e}kely, Elena
-  Andonova, Antonella Devescovi, Dan Herron, Ching Ching~Lu, Thomas Pechmann,
-  Csaba Pl{\'e}h, et~al.
-\newblock Timed picture naming in seven languages.
-\newblock \emph{Psychonomic bulletin \& review}, 10:\penalty0 344--380, 2003.
+\bibitem[B{\"o}gels and Torreira(2015)]{BogTor2015}
+Sara B{\"o}gels and Francisco Torreira.
+\newblock Listeners use intonational phrase boundaries to project turn ends in
+  spoken interaction.
+\newblock \emph{Journal of Phonetics}, 52:\penalty0 46--57, 2015.
 
-\bibitem[Chang and Keisler(1990)]{P2}
-Chen-Chung Chang and H.~Jerome Keisler.
-\newblock \emph{Model Theory}.
-\newblock North-Holland, third edition, 1990.
+\bibitem[Clayman(2012)]{Clayman2013}
+Steven~E Clayman.
+\newblock Turn-constructional units and the transition-relevance place.
+\newblock \emph{The handbook of conversation analysis}, pages 151--166, 2012.
+
+\bibitem[De~Ruiter et~al.(2006)De~Ruiter, Mitterer, and Enfield]{DeRuiter2006}
+Jan-Peter De~Ruiter, Holger Mitterer, and Nick~J Enfield.
+\newblock Projecting the end of a speaker's turn: A cognitive cornerstone of
+  conversation.
+\newblock \emph{Language}, 82\penalty0 (3):\penalty0 515--535, 2006.
+
+\bibitem[DUNCAN(1973)]{Duncan1973}
+JR~DUNCAN, STARKEY.
+\newblock Toward a grammar for dyadic conversation.
+\newblock 1973.
 
 \bibitem[Duncan(1972)]{Duncan1972}
 Starkey Duncan.
@@ -30,17 +39,17 @@ Starkey Duncan.
   turns1.
 \newblock \emph{Language in society}, 3\penalty0 (2):\penalty0 161--180, 1974.
 
+\bibitem[Duncan and Fiske(2015)]{Duncan1977}
+Starkey Duncan and Donald~W Fiske.
+\newblock \emph{Face-to-face interaction: Research, methods, and theory}.
+\newblock Routledge, 2015.
+
 \bibitem[Ford and Thompson(1996)]{Ford1996}
 Cecilia~E Ford and Sandra~A Thompson.
 \newblock Interactional units in conversation: Syntactic, intonational, and
   pragmatic resources for the management of turns.
 \newblock \emph{Studies in interactional sociolinguistics}, 13:\penalty0
   134--184, 1996.
-
-\bibitem[Fry(1975)]{Fry1975}
-Dennis~B Fry.
-\newblock Simple reaction-times to speech and non-speech stimuli.
-\newblock \emph{Cortex}, 11\penalty0 (4):\penalty0 355--360, 1975.
 
 \bibitem[Heldner and Edlund(2010)]{HelEdl2010}
 Mattias Heldner and Jens Edlund.
@@ -53,16 +62,60 @@ Peter Indefrey and Willem~JM Levelt.
 \newblock The spatial and temporal signatures of word production components.
 \newblock \emph{Cognition}, 92\penalty0 (1-2):\penalty0 101--144, 2004.
 
+\bibitem[Kendon(1967)]{Kendon1967}
+Adam Kendon.
+\newblock Some functions of gaze-direction in social interaction.
+\newblock \emph{Acta psychologica}, 26:\penalty0 22--63, 1967.
+
+\bibitem[Kendrick and Torreira(2015)]{KenTor2014}
+Kobin~H Kendrick and Francisco Torreira.
+\newblock The timing and construction of preference: A quantitative study.
+\newblock \emph{Discourse Processes}, 52\penalty0 (4):\penalty0 255--289, 2015.
+
+\bibitem[Levinson(1983)]{Lev1983}
+Stephen~C Levinson.
+\newblock \emph{Pragmatics}.
+\newblock Cambridge university press, 1983.
+
 \bibitem[Levinson and Torreira(2015)]{LevTor2015}
 Stephen~C Levinson and Francisco Torreira.
 \newblock Timing in turn-taking and its implications for processing models of
   language.
 \newblock \emph{Frontiers in psychology}, 6:\penalty0 731, 2015.
 
+\bibitem[Magyari and De~Ruiter(2012)]{Magyari2012}
+Lilla Magyari and Jan~P De~Ruiter.
+\newblock Prediction of turn-ends based on anticipation of upcoming words.
+\newblock \emph{Frontiers in psychology}, 3:\penalty0 376, 2012.
+
+\bibitem[Pickering and Garrod(2013)]{PicGar2013}
+Martin~J Pickering and Simon Garrod.
+\newblock An integrated theory of language production and comprehension.
+\newblock \emph{Behavioral and brain sciences}, 36\penalty0 (4):\penalty0
+  329--347, 2013.
+
+\bibitem[Riest et~al.(2015)Riest, Jorschick, and de~Ruiter]{Riest2015}
+Carina Riest, Annett~B Jorschick, and Jan~P de~Ruiter.
+\newblock Anticipation in turn-taking: mechanisms and information sources.
+\newblock \emph{Frontiers in psychology}, 6:\penalty0 89, 2015.
+
 \bibitem[Sacks et~al.(1974)Sacks, Schegloff, and Jefferson]{Sacks1974}
 H.~Sacks, E.A. Schegloff, and G.~Jefferson.
 \newblock A simplest systematics for the organization of turn-taking for
   conversation.
 \newblock volume~50, page 696 – 735. 1974.
+
+\bibitem[Ten~Bosch et~al.(2005)Ten~Bosch, Oostdijk, and Boves]{tenBosch2005}
+Louis Ten~Bosch, Nelleke Oostdijk, and Lou Boves.
+\newblock On temporal aspects of turn taking in conversational dialogues.
+\newblock \emph{Speech Communication}, 47\penalty0 (1-2):\penalty0 80--86,
+  2005.
+
+\bibitem[Yngve(1970)]{Yngve1970}
+Victor~H Yngve.
+\newblock On getting a word in edgewise.
+\newblock In \emph{Papers from the sixth regional meeting Chicago Linguistic
+  Society, April 16-18, 1970, Chicago Linguistic Society, Chicago}, pages
+  567--578, 1970.
 
 \end{thebibliography}

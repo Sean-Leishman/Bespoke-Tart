@@ -3,50 +3,51 @@ Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: skeleton.aux
 The style file: plainnat.bst
 Database file #1: mybibfile.bib
-Warning--I didn't find a database entry for ""
-Warning--I didn't find a database entry for "P1"
+Warning--I didn't find a database entry for "Sacks1996"
+Warning--I didn't find a database entry for "DuBoise1993"
+Warning--empty journal in Duncan1973
 Warning--empty booktitle in Sacks1974
 Warning--can't use both volume and number fields in Sacks1974
 Warning--empty publisher in Sacks1974
-You've used 10 entries,
+You've used 20 entries,
             2773 wiz_defined-function locations,
-            678 strings with 6573 characters,
-and the built_in function-call counts, 4885 in all, are:
-= -- 445
-> -- 266
-< -- 10
-+ -- 91
-- -- 81
-* -- 383
-:= -- 740
-add.period$ -- 31
-call.type$ -- 10
-change.case$ -- 56
-chr.to.int$ -- 10
-cite$ -- 23
-duplicate$ -- 228
-empty$ -- 394
-format.name$ -- 101
-if$ -- 1028
+            743 strings with 8039 characters,
+and the built_in function-call counts, 8725 in all, are:
+= -- 812
+> -- 379
+< -- 20
++ -- 131
+- -- 111
+* -- 636
+:= -- 1302
+add.period$ -- 61
+call.type$ -- 20
+change.case$ -- 95
+chr.to.int$ -- 20
+cite$ -- 44
+duplicate$ -- 450
+empty$ -- 778
+format.name$ -- 149
+if$ -- 1863
 int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 11
-newline$ -- 58
-num.names$ -- 40
-pop$ -- 105
+missing$ -- 22
+newline$ -- 108
+num.names$ -- 80
+pop$ -- 188
 preamble$ -- 1
-purify$ -- 46
+purify$ -- 77
 quote$ -- 0
-skip$ -- 189
+skip$ -- 351
 stack$ -- 0
-substring$ -- 210
-swap$ -- 34
-text.length$ -- 2
+substring$ -- 391
+swap$ -- 62
+text.length$ -- 4
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 105
-warning$ -- 3
-while$ -- 45
+type$ -- 210
+warning$ -- 4
+while$ -- 91
 width$ -- 0
-write$ -- 137
-(There were 5 warnings)
+write$ -- 263
+(There were 6 warnings)

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2023.10.9)  9 OCT 2023 23:22
+This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2023.10.10)  10 OCT 2023 17:30
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -330,70 +330,62 @@ File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
 )
 LaTeX Font Info:    Font shape `OT1/phv/b/n' will be
 (Font)              scaled to size 15.55188pt on input line 137.
-LaTeX Font Info:    Font shape `OT1/phv/b/n' will be
-(Font)              scaled to size 12.9599pt on input line 138.
  [1
 
 
 ]
-./skeleton.tex:150: Undefined control sequence.
-l.150 ...hey also define another feature of \textt
-                                                  {pragmatic completness} th...
-The control sequence at the end of the top line
-of your error message was never \def'ed. If you have
-misspelled it (e.g., `\hobx'), type `I' and the correct
-spelling (e.g., `I\hbox'). Otherwise just continue,
-and I'll forget about whatever was undefined.
-
-./skeleton.tex:150: Undefined control sequence.
-l.150 ...al and syntactic completeness as a \textt
-                                                  {Complex Transition Releva...
-The control sequence at the end of the top line
-of your error message was never \def'ed. If you have
-misspelled it (e.g., `\hobx'), type `I' and the correct
-spelling (e.g., `I\hbox'). Otherwise just continue,
-and I'll forget about whatever was undefined.
-
+LaTeX Font Info:    Font shape `OT1/phv/b/n' will be
+(Font)              scaled to size 12.9599pt on input line 142.
 LaTeX Font Info:    Font shape `OT1/phv/m/it' in size <12> not available
-(Font)              Font shape `OT1/phv/m/sl' tried instead on input line 151.
+(Font)              Font shape `OT1/phv/m/sl' tried instead on input line 153.
 LaTeX Font Info:    Font shape `OT1/phv/m/sl' will be
-(Font)              scaled to size 10.79993pt on input line 151.
-[2] [3]
+(Font)              scaled to size 10.79993pt on input line 153.
+ [2]
+
+Package natbib Warning: Citation `Sacks1996' on page 3 undefined on input line 162.
+
+
+Package natbib Warning: Citation `DuBoise1993' on page 3 undefined on input line 164.
+
+[3] [4] [5]
 Chapter 2.
-[4
+[6
 
 ]
 Chapter 3.
-(./skeleton.bbl [5
+(./skeleton.bbl [7
 
-]) [6
+] [8
 
-]
+]) [9]
 Appendix A.
-[7
+[10
 
 ]
 Appendix B.
-[8
+[11
 
 ]
 Appendix C.
-[9
+
+Package natbib Warning: There were undefined citations.
+
+[12
 
 ] (./skeleton.aux) ) 
 Here is how much of TeX's memory you used:
- 6973 strings out of 480247
- 116584 string characters out of 5896151
- 440370 words of memory out of 5000000
- 24578 multiletter control sequences out of 15000+600000
- 514324 words of font info for 227 fonts, out of 8000000 for 9000
- 14 hyphenation exceptions out of 8191
- 70i,6n,77p,1246b,270s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 7029 strings out of 478287
+ 117378 string characters out of 5849288
+ 444747 words of memory out of 5000000
+ 24861 multiletter control sequences out of 15000+600000
+ 514395 words of font info for 245 fonts, out of 8000000 for 9000
+ 1141 hyphenation exceptions out of 8191
+ 70i,6n,77p,1431b,325s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/share/texlive/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/uhvb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/uhvro8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on skeleton.pdf (14 pages, 133633 bytes).
+Output written on skeleton.pdf (17 pages, 144108 bytes).
 PDF statistics:
- 94 PDF objects out of 1000 (max. 8388607)
- 60 compressed objects within 1 object stream
+ 103 PDF objects out of 1000 (max. 8388607)
+ 66 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 86022 words of extra memory for PDF output out of 89155 (max. 10000000)
+ 83974 words of extra memory for PDF output out of 89155 (max. 10000000)
 

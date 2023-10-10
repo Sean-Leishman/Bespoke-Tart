@@ -1,12 +1,14 @@
 \contentsline {chapter}{\numberline {1}Introduction}{1}{}%
-\contentsline {section}{\numberline {1.1}Turn-taking Prediction}{2}{}%
-\contentsline {subsection}{\numberline {1.1.1}From the Conversation Analysis Perspective}{2}{}%
-\contentsline {subsubsection}{\numberline {1.1.1.1}Turn-taking Cues}{3}{}%
-\contentsline {chapter}{\numberline {2}Your next chapter}{4}{}%
-\contentsline {chapter}{\numberline {3}Conclusions}{5}{}%
-\contentsline {section}{\numberline {3.1}Final Reminder}{5}{}%
-\contentsline {chapter}{Bibliography}{6}{}%
-\contentsline {chapter}{\numberline {A}First appendix}{7}{}%
-\contentsline {section}{\numberline {A.1}First section}{7}{}%
-\contentsline {chapter}{\numberline {B}Participants' information sheet}{8}{}%
-\contentsline {chapter}{\numberline {C}Participants' consent form}{9}{}%
+\contentsline {section}{\numberline {1.1}Turn-taking: From the Conversational Analaysis Perspective}{2}{}%
+\contentsline {subsection}{\numberline {1.1.1}Models of Turn-taking Organisation}{2}{}%
+\contentsline {subsection}{\numberline {1.1.2}Turn-taking Cues}{3}{}%
+\contentsline {subsection}{\numberline {1.1.3}A Concrete Model of Turn-Taking}{5}{}%
+\contentsline {section}{\numberline {1.2}Models for End-of-Turn Detection and Prediction}{5}{}%
+\contentsline {chapter}{\numberline {2}Your next chapter}{6}{}%
+\contentsline {chapter}{\numberline {3}Conclusions}{7}{}%
+\contentsline {section}{\numberline {3.1}Final Reminder}{7}{}%
+\contentsline {chapter}{Bibliography}{8}{}%
+\contentsline {chapter}{\numberline {A}First appendix}{10}{}%
+\contentsline {section}{\numberline {A.1}First section}{10}{}%
+\contentsline {chapter}{\numberline {B}Participants' information sheet}{11}{}%
+\contentsline {chapter}{\numberline {C}Participants' consent form}{12}{}%
