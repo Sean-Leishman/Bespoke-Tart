@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2023.10.10)  10 OCT 2023 17:30
+This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2023.10.10)  12 OCT 2023 17:28
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -347,45 +347,97 @@ Package natbib Warning: Citation `Sacks1996' on page 3 undefined on input line 1
 
 Package natbib Warning: Citation `DuBoise1993' on page 3 undefined on input line 164.
 
-[3] [4] [5]
+[3] [4]
+
+Package natbib Warning: Citation `Bell2001' on page 5 undefined on input line 179.
+
+
+Package natbib Warning: Citation `Sato2002' on page 5 undefined on input line 179.
+
+
+Package natbib Warning: Citation `Schlangen2006' on page 5 undefined on input line 179.
+
+
+Package natbib Warning: Citation `Meena2014' on page 5 undefined on input line 179.
+
+
+Package natbib Warning: Citation `RauxEsk2008' on page 5 undefined on input line 179.
+
+
+Package natbib Warning: Citation `Maier2017' on page 5 undefined on input line 179.
+
+
+Package natbib Warning: Citation `Sato2002' on page 5 undefined on input line 180.
+
+
+Package natbib Warning: Citation `Meena2014' on page 5 undefined on input line 180.
+
+
+Package natbib Warning: Citation `Schlangen2006' on page 5 undefined on input line 180.
+
+
+Package natbib Warning: Citation `Sato2002' on page 5 undefined on input line 181.
+
+
+Package natbib Warning: Citation `Schlangen2006' on page 5 undefined on input line 181.
+
+
+Package natbib Warning: Citation `Meena2014' on page 5 undefined on input line 181.
+
+
+Package natbib Warning: Citation `Rau2008' on page 5 undefined on input line 181.
+
+
+Package natbib Warning: Citation `Raux2008' on page 5 undefined on input line 181.
+
+
+Package natbib Warning: Citation `Raux2008' on page 5 undefined on input line 182.
+
+
+Package natbib Warning: Citation `Roddy2018a' on page 5 undefined on input line 184.
+
+
+Package natbib Warning: Citation `Ward2019' on page 5 undefined on input line 184.
+
+[5] [6]
 Chapter 2.
-[6
+[7
 
 ]
 Chapter 3.
-(./skeleton.bbl [7
+(./skeleton.bbl [8
 
-] [8
+] [9
 
-]) [9]
+]) [10]
 Appendix A.
-[10
+[11
 
 ]
 Appendix B.
-[11
+[12
 
 ]
 Appendix C.
 
 Package natbib Warning: There were undefined citations.
 
-[12
+[13
 
 ] (./skeleton.aux) ) 
 Here is how much of TeX's memory you used:
- 7029 strings out of 478287
- 117378 string characters out of 5849288
- 444747 words of memory out of 5000000
- 24861 multiletter control sequences out of 15000+600000
- 514395 words of font info for 245 fonts, out of 8000000 for 9000
+ 7058 strings out of 478287
+ 117718 string characters out of 5849288
+ 444893 words of memory out of 5000000
+ 24870 multiletter control sequences out of 15000+600000
+ 515279 words of font info for 259 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  70i,6n,77p,1431b,325s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/share/texlive/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/uhvb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/uhvro8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on skeleton.pdf (17 pages, 144108 bytes).
+Output written on skeleton.pdf (18 pages, 148899 bytes).
 PDF statistics:
- 103 PDF objects out of 1000 (max. 8388607)
- 66 compressed objects within 1 object stream
+ 106 PDF objects out of 1000 (max. 8388607)
+ 68 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  83974 words of extra memory for PDF output out of 89155 (max. 10000000)
 

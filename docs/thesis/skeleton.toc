@@ -4,11 +4,11 @@
 \contentsline {subsection}{\numberline {1.1.2}Turn-taking Cues}{3}{}%
 \contentsline {subsection}{\numberline {1.1.3}A Concrete Model of Turn-Taking}{5}{}%
 \contentsline {section}{\numberline {1.2}Models for End-of-Turn Detection and Prediction}{5}{}%
-\contentsline {chapter}{\numberline {2}Your next chapter}{6}{}%
-\contentsline {chapter}{\numberline {3}Conclusions}{7}{}%
-\contentsline {section}{\numberline {3.1}Final Reminder}{7}{}%
-\contentsline {chapter}{Bibliography}{8}{}%
-\contentsline {chapter}{\numberline {A}First appendix}{10}{}%
-\contentsline {section}{\numberline {A.1}First section}{10}{}%
-\contentsline {chapter}{\numberline {B}Participants' information sheet}{11}{}%
-\contentsline {chapter}{\numberline {C}Participants' consent form}{12}{}%
+\contentsline {chapter}{\numberline {2}Your next chapter}{7}{}%
+\contentsline {chapter}{\numberline {3}Conclusions}{8}{}%
+\contentsline {section}{\numberline {3.1}Final Reminder}{8}{}%
+\contentsline {chapter}{Bibliography}{9}{}%
+\contentsline {chapter}{\numberline {A}First appendix}{11}{}%
+\contentsline {section}{\numberline {A.1}First section}{11}{}%
+\contentsline {chapter}{\numberline {B}Participants' information sheet}{12}{}%
+\contentsline {chapter}{\numberline {C}Participants' consent form}{13}{}%
