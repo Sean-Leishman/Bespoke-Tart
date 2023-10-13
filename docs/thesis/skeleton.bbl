@@ -1,9 +1,15 @@
-\begin{thebibliography}{23}
+\begin{thebibliography}{37}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
   \providecommand{\doi}[1]{doi: #1}\else
   \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Bell et~al.(2001)Bell, Boye, and Gustafson]{Bell2001}
+Linda Bell, Johan Boye, and Joakim Gustafson.
+\newblock Real-time handling of fragmented utterances.
+\newblock In \emph{Proc. NAACL workshop on adaptation in dialogue systems},
+  pages 2--8, 2001.
 
 \bibitem[B{\"o}gels and Torreira(2015)]{BogTor2015}
 Sara B{\"o}gels and Francisco Torreira.
@@ -16,22 +22,29 @@ Steven~E Clayman.
 \newblock Turn-constructional units and the transition-relevance place.
 \newblock \emph{The handbook of conversation analysis}, pages 151--166, 2012.
 
-\bibitem[De~Ruiter et~al.(2006)De~Ruiter, Mitterer, and Enfield]{DeRuiter2006}
+\bibitem[De~Ruiter et~al.(2006)De~Ruiter, Mitterer, and Enfield]{deRuiter2006}
 Jan-Peter De~Ruiter, Holger Mitterer, and Nick~J Enfield.
 \newblock Projecting the end of a speaker's turn: A cognitive cornerstone of
   conversation.
 \newblock \emph{Language}, 82\penalty0 (3):\penalty0 515--535, 2006.
 
-\bibitem[Duncan(1973)]{Duncan1973}
-JR~Duncan, STARKEY.
-\newblock Toward a grammar for dyadic conversation.
-\newblock 1973.
+\bibitem[Du~Bois and Schuetze-Coburn(1993)]{DuBois1993}
+John~W Du~Bois and Stephan Schuetze-Coburn.
+\newblock Representing hierarchy: Constituent structure for discourse
+  databases.
+\newblock \emph{Talking data: Transcription and coding in discourse research},
+  pages 221--260, 1993.
 
 \bibitem[Duncan(1972)]{Duncan1972}
 Starkey Duncan.
 \newblock Some signals and rules for taking speaking turns in conversations.
 \newblock \emph{Journal of personality and social psychology}, 23\penalty0
   (2):\penalty0 283, 1972.
+
+\bibitem[Duncan(1973)]{Duncan1973}
+Starkey Duncan.
+\newblock Toward a grammar for dyadic conversation.
+\newblock 1973.
 
 \bibitem[Duncan(1974)]{Duncan1974}
 Starkey Duncan.
@@ -43,6 +56,12 @@ Starkey Duncan.
 Starkey Duncan and Donald~W Fiske.
 \newblock \emph{Face-to-face interaction: Research, methods, and theory}.
 \newblock Routledge, 2015.
+
+\bibitem[Ekstedt and Skantze(2020)]{Ekstedt2020}
+Erik Ekstedt and Gabriel Skantze.
+\newblock Turngpt: a transformer-based language model for predicting
+  turn-taking in spoken dialog.
+\newblock \emph{arXiv preprint arXiv:2010.10874}, 2020.
 
 \bibitem[Ferrer et~al.(2002)Ferrer, Shriberg, and Stolcke]{Ferrer2002}
 Luciana Ferrer, Elizabeth Shriberg, and Andreas Stolcke.
@@ -64,10 +83,10 @@ Mattias Heldner and Jens Edlund.
 \newblock \emph{Journal of Phonetics}, 38\penalty0 (4):\penalty0 555--568,
   2010.
 
-\bibitem[Indefrey and Levelt(2004)]{IndLev2004}
-Peter Indefrey and Willem~JM Levelt.
-\newblock The spatial and temporal signatures of word production components.
-\newblock \emph{Cognition}, 92\penalty0 (1-2):\penalty0 101--144, 2004.
+\bibitem[Jiang et~al.(2023)Jiang, Ekstedt, and Skantze]{Jiang2023}
+Bing'er Jiang, Erik Ekstedt, and Gabriel Skantze.
+\newblock Response-conditioned turn-taking prediction.
+\newblock \emph{arXiv preprint arXiv:2305.02036}, 2023.
 
 \bibitem[Kendon(1967)]{Kendon1967}
 Adam Kendon.
@@ -84,16 +103,41 @@ Stephen~C Levinson.
 \newblock \emph{Pragmatics}.
 \newblock Cambridge university press, 1983.
 
+\bibitem[Levinson(2012)]{Levinson2012}
+Stephen~C Levinson.
+\newblock Action formation and ascription.
+\newblock \emph{The handbook of conversation analysis}, pages 101--130, 2012.
+
 \bibitem[Levinson and Torreira(2015)]{LevTor2015}
 Stephen~C Levinson and Francisco Torreira.
 \newblock Timing in turn-taking and its implications for processing models of
   language.
 \newblock \emph{Frontiers in psychology}, 6:\penalty0 731, 2015.
 
+\bibitem[Liu et~al.(2018)Liu, Saleh, Pot, Goodrich, Sepassi, Kaiser, and
+  Shazeer]{Liu2018}
+Peter~J Liu, Mohammad Saleh, Etienne Pot, Ben Goodrich, Ryan Sepassi, Lukasz
+  Kaiser, and Noam Shazeer.
+\newblock Generating wikipedia by summarizing long sequences.
+\newblock \emph{arXiv preprint arXiv:1801.10198}, 2018.
+
 \bibitem[Magyari and De~Ruiter(2012)]{Magyari2012}
 Lilla Magyari and Jan~P De~Ruiter.
 \newblock Prediction of turn-ends based on anticipation of upcoming words.
 \newblock \emph{Frontiers in psychology}, 3:\penalty0 376, 2012.
+
+\bibitem[Maier et~al.(2017)Maier, Hough, Schlangen, et~al.]{Maier2017}
+Angelika Maier, Julian Hough, David Schlangen, et~al.
+\newblock Towards deep end-of-turn prediction for situated spoken dialogue
+  systems.
+\newblock 2017.
+
+\bibitem[Meena et~al.(2014)Meena, Skantze, and Gustafson]{Meena2014}
+Raveesh Meena, Gabriel Skantze, and Joakim Gustafson.
+\newblock Data-driven models for timing feedback responses in a map task
+  dialogue system.
+\newblock \emph{Computer Speech \& Language}, 28\penalty0 (4):\penalty0
+  903--922, 2014.
 
 \bibitem[Pickering and Garrod(2013)]{PicGar2013}
 Martin~J Pickering and Simon Garrod.
@@ -101,22 +145,57 @@ Martin~J Pickering and Simon Garrod.
 \newblock \emph{Behavioral and brain sciences}, 36\penalty0 (4):\penalty0
   329--347, 2013.
 
+\bibitem[Radford et~al.(2019)Radford, Wu, Child, Luan, Amodei, Sutskever,
+  et~al.]{Radford2019}
+Alec Radford, Jeffrey Wu, Rewon Child, David Luan, Dario Amodei, Ilya
+  Sutskever, et~al.
+\newblock Language models are unsupervised multitask learners.
+\newblock \emph{OpenAI blog}, 1\penalty0 (8):\penalty0 9, 2019.
+
+\bibitem[Raux and Eskenazi(2008)]{Raux2008}
+Antoine Raux and Maxine Eskenazi.
+\newblock Optimizing endpointing thresholds using dialogue features in a spoken
+  dialogue system.
+\newblock In \emph{Proceedings of the 9th SIGdial Workshop on Discourse and
+  Dialogue}, pages 1--10, 2008.
+
 \bibitem[Riest et~al.(2015)Riest, Jorschick, and de~Ruiter]{Riest2015}
 Carina Riest, Annett~B Jorschick, and Jan~P de~Ruiter.
 \newblock Anticipation in turn-taking: mechanisms and information sources.
 \newblock \emph{Frontiers in psychology}, 6:\penalty0 89, 2015.
 
-\bibitem[Roddy et~al.(2018)Roddy, Skantze, and Harte]{Roddy2018}
+\bibitem[Roddy et~al.(2018{\natexlab{a}})Roddy, Skantze, and Harte]{Roddy2018a}
 Matthew Roddy, Gabriel Skantze, and Naomi Harte.
 \newblock Investigating speech features for continuous turn-taking prediction
   using lstms.
-\newblock \emph{arXiv preprint arXiv:1806.11461}, 2018.
+\newblock \emph{arXiv preprint arXiv:1806.11461}, 2018{\natexlab{a}}.
+
+\bibitem[Roddy et~al.(2018{\natexlab{b}})Roddy, Skantze, and Harte]{Roddy2018b}
+Matthew Roddy, Gabriel Skantze, and Naomi Harte.
+\newblock Multimodal continuous turn-taking prediction using multiscale rnns.
+\newblock In \emph{Proceedings of the 20th ACM International Conference on
+  Multimodal Interaction}, pages 186--190, 2018{\natexlab{b}}.
 
 \bibitem[Sacks et~al.(1974)Sacks, Schegloff, and Jefferson]{Sacks1974}
 H.~Sacks, E.A. Schegloff, and G.~Jefferson.
 \newblock A simplest systematics for the organization of turn-taking for
   conversation.
 \newblock volume~50, page 696 – 735. 1974.
+
+\bibitem[Sato et~al.(2002)Sato, Higashinaka, Tamoto, Nakano, and
+  Aikawa]{Sato2002}
+Ryo Sato, Ryuichiro Higashinaka, Masafumi Tamoto, Mikio Nakano, and Kiyoaki
+  Aikawa.
+\newblock Learning decision trees to determine turn-taking by spoken dialogue
+  systems.
+\newblock In \emph{INTERSPEECH}, 2002.
+
+\bibitem[Schlangen(2006)]{Schlangen2006}
+David Schlangen.
+\newblock From reaction to prediction: Experiments with computational models of
+  turn-taking.
+\newblock \emph{Proceedings of Interspeech 2006, Panel on Prosody of Dialogue
+  Acts and Turn-Taking}, 2006.
 
 \bibitem[Skantze(2017)]{Skantze2017}
 Gabriel Skantze.
@@ -130,6 +209,20 @@ Louis Ten~Bosch, Nelleke Oostdijk, and Lou Boves.
 \newblock On temporal aspects of turn taking in conversational dialogues.
 \newblock \emph{Speech Communication}, 47\penalty0 (1-2):\penalty0 80--86,
   2005.
+
+\bibitem[Vaswani et~al.(2017)Vaswani, Shazeer, Parmar, Uszkoreit, Jones, Gomez,
+  Kaiser, and Polosukhin]{Vaswani2017}
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones,
+  Aidan~N Gomez, {\L}ukasz Kaiser, and Illia Polosukhin.
+\newblock Attention is all you need.
+\newblock \emph{Advances in neural information processing systems}, 30, 2017.
+
+\bibitem[Ward et~al.(2018)Ward, Aguirre, Cervantes, and Fuentes]{Ward2018}
+Nigel~G Ward, Diego Aguirre, Gerardo Cervantes, and Olac Fuentes.
+\newblock Turn-taking predictions across languages and genres using an lstm
+  recurrent neural network.
+\newblock In \emph{2018 IEEE Spoken Language Technology Workshop (SLT)}, pages
+  831--837. IEEE, 2018.
 
 \bibitem[Yngve(1970)]{Yngve1970}
 Victor~H Yngve.

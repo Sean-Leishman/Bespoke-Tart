@@ -3,61 +3,51 @@ Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: skeleton.aux
 The style file: plainnat.bst
 Database file #1: mybibfile.bib
-Warning--I didn't find a database entry for "Sacks1996"
-Warning--I didn't find a database entry for "DuBoise1993"
-Warning--I didn't find a database entry for "Bell2001"
-Warning--I didn't find a database entry for "Sato2002"
-Warning--I didn't find a database entry for "Schlangen2006"
-Warning--I didn't find a database entry for "Meena2014"
-Warning--I didn't find a database entry for "RauxEsk2008"
-Warning--I didn't find a database entry for "Maier2017"
-Warning--I didn't find a database entry for "Rau2008"
-Warning--I didn't find a database entry for "Raux2008"
-Warning--I didn't find a database entry for "Roddy2018a"
-Warning--I didn't find a database entry for "Ward2019"
+Warning--I didn't find a database entry for ""
 Warning--empty journal in Duncan1973
+Warning--empty journal in Maier2017
 Warning--empty booktitle in Sacks1974
 Warning--can't use both volume and number fields in Sacks1974
 Warning--empty publisher in Sacks1974
-You've used 23 entries,
+You've used 37 entries,
             2773 wiz_defined-function locations,
-            782 strings with 8869 characters,
-and the built_in function-call counts, 10088 in all, are:
-= -- 930
-> -- 449
-< -- 22
-+ -- 155
-- -- 132
-* -- 732
-:= -- 1501
-add.period$ -- 70
-call.type$ -- 23
-change.case$ -- 111
-chr.to.int$ -- 23
-cite$ -- 50
-duplicate$ -- 526
-empty$ -- 903
-format.name$ -- 173
-if$ -- 2160
-int.to.chr$ -- 1
+            840 strings with 11322 characters,
+and the built_in function-call counts, 17508 in all, are:
+= -- 1567
+> -- 962
+< -- 32
++ -- 329
+- -- 291
+* -- 1323
+:= -- 2629
+add.period$ -- 113
+call.type$ -- 37
+change.case$ -- 204
+chr.to.int$ -- 36
+cite$ -- 79
+duplicate$ -- 871
+empty$ -- 1458
+format.name$ -- 350
+if$ -- 3734
+int.to.chr$ -- 2
 int.to.str$ -- 1
-missing$ -- 25
-newline$ -- 123
-num.names$ -- 92
-pop$ -- 228
+missing$ -- 39
+newline$ -- 193
+num.names$ -- 148
+pop$ -- 430
 preamble$ -- 1
-purify$ -- 90
+purify$ -- 169
 quote$ -- 0
-skip$ -- 407
+skip$ -- 692
 stack$ -- 0
-substring$ -- 429
-swap$ -- 76
-text.length$ -- 5
+substring$ -- 623
+swap$ -- 142
+text.length$ -- 11
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 243
-warning$ -- 4
-while$ -- 103
+type$ -- 397
+warning$ -- 5
+while$ -- 164
 width$ -- 0
-write$ -- 300
-(There were 16 warnings)
+write$ -- 476
+(There were 6 warnings)
