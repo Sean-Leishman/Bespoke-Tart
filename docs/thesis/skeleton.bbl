@@ -1,4 +1,4 @@
-\begin{thebibliography}{37}
+\begin{thebibliography}{32}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -27,13 +27,6 @@ Jan-Peter De~Ruiter, Holger Mitterer, and Nick~J Enfield.
 \newblock Projecting the end of a speaker's turn: A cognitive cornerstone of
   conversation.
 \newblock \emph{Language}, 82\penalty0 (3):\penalty0 515--535, 2006.
-
-\bibitem[Du~Bois and Schuetze-Coburn(1993)]{DuBois1993}
-John~W Du~Bois and Stephan Schuetze-Coburn.
-\newblock Representing hierarchy: Constituent structure for discourse
-  databases.
-\newblock \emph{Talking data: Transcription and coding in discourse research},
-  pages 221--260, 1993.
 
 \bibitem[Duncan(1972)]{Duncan1972}
 Starkey Duncan.
@@ -93,20 +86,13 @@ Adam Kendon.
 \newblock Some functions of gaze-direction in social interaction.
 \newblock \emph{Acta psychologica}, 26:\penalty0 22--63, 1967.
 
-\bibitem[Kendrick and Torreira(2015)]{KenTor2014}
-Kobin~H Kendrick and Francisco Torreira.
-\newblock The timing and construction of preference: A quantitative study.
-\newblock \emph{Discourse Processes}, 52\penalty0 (4):\penalty0 255--289, 2015.
-
-\bibitem[Levinson(1983)]{Lev1983}
-Stephen~C Levinson.
-\newblock \emph{Pragmatics}.
-\newblock Cambridge university press, 1983.
-
-\bibitem[Levinson(2012)]{Levinson2012}
-Stephen~C Levinson.
-\newblock Action formation and ascription.
-\newblock \emph{The handbook of conversation analysis}, pages 101--130, 2012.
+\bibitem[Koiso et~al.(1998)Koiso, Horiuchi, Tutiya, Ichikawa, and
+  Den]{Koiso1998}
+Hanae Koiso, Yasuo Horiuchi, Syun Tutiya, Akira Ichikawa, and Yasuharu Den.
+\newblock An analysis of turn-taking and backchannels based on prosodic and
+  syntactic features in japanese map task dialogs.
+\newblock \emph{Language and speech}, 41\penalty0 (3-4):\penalty0 295--321,
+  1998.
 
 \bibitem[Levinson and Torreira(2015)]{LevTor2015}
 Stephen~C Levinson and Francisco Torreira.
@@ -164,17 +150,11 @@ Carina Riest, Annett~B Jorschick, and Jan~P de~Ruiter.
 \newblock Anticipation in turn-taking: mechanisms and information sources.
 \newblock \emph{Frontiers in psychology}, 6:\penalty0 89, 2015.
 
-\bibitem[Roddy et~al.(2018{\natexlab{a}})Roddy, Skantze, and Harte]{Roddy2018a}
+\bibitem[Roddy et~al.(2018)Roddy, Skantze, and Harte]{Roddy2018a}
 Matthew Roddy, Gabriel Skantze, and Naomi Harte.
 \newblock Investigating speech features for continuous turn-taking prediction
   using lstms.
-\newblock \emph{arXiv preprint arXiv:1806.11461}, 2018{\natexlab{a}}.
-
-\bibitem[Roddy et~al.(2018{\natexlab{b}})Roddy, Skantze, and Harte]{Roddy2018b}
-Matthew Roddy, Gabriel Skantze, and Naomi Harte.
-\newblock Multimodal continuous turn-taking prediction using multiscale rnns.
-\newblock In \emph{Proceedings of the 20th ACM International Conference on
-  Multimodal Interaction}, pages 186--190, 2018{\natexlab{b}}.
+\newblock \emph{arXiv preprint arXiv:1806.11461}, 2018.
 
 \bibitem[Sacks et~al.(1974)Sacks, Schegloff, and Jefferson]{Sacks1974}
 H.~Sacks, E.A. Schegloff, and G.~Jefferson.
@@ -203,12 +183,6 @@ Gabriel Skantze.
   using lstm recurrent neural networks.
 \newblock In \emph{Proceedings of the 18th Annual SIGdial Meeting on Discourse
   and Dialogue}, pages 220--230, 2017.
-
-\bibitem[Ten~Bosch et~al.(2005)Ten~Bosch, Oostdijk, and Boves]{tenBosch2005}
-Louis Ten~Bosch, Nelleke Oostdijk, and Lou Boves.
-\newblock On temporal aspects of turn taking in conversational dialogues.
-\newblock \emph{Speech Communication}, 47\penalty0 (1-2):\penalty0 80--86,
-  2005.
 
 \bibitem[Vaswani et~al.(2017)Vaswani, Shazeer, Parmar, Uszkoreit, Jones, Gomez,
   Kaiser, and Polosukhin]{Vaswani2017}

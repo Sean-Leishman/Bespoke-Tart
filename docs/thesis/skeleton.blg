@@ -3,51 +3,56 @@ Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: skeleton.aux
 The style file: plainnat.bst
 Database file #1: mybibfile.bib
+Repeated entry---line 455 of file mybibfile.bib
+ : @article{Koiso1998
+ :                   ,
+I'm skipping whatever remains of this entry
+Warning--I didn't find a database entry for "Gravano2011"
 Warning--I didn't find a database entry for ""
 Warning--empty journal in Duncan1973
 Warning--empty journal in Maier2017
 Warning--empty booktitle in Sacks1974
 Warning--can't use both volume and number fields in Sacks1974
 Warning--empty publisher in Sacks1974
-You've used 37 entries,
+You've used 32 entries,
             2773 wiz_defined-function locations,
-            840 strings with 11322 characters,
-and the built_in function-call counts, 17508 in all, are:
-= -- 1567
-> -- 962
-< -- 32
-+ -- 329
-- -- 291
-* -- 1323
-:= -- 2629
-add.period$ -- 113
-call.type$ -- 37
-change.case$ -- 204
-chr.to.int$ -- 36
-cite$ -- 79
-duplicate$ -- 871
-empty$ -- 1458
-format.name$ -- 350
-if$ -- 3734
-int.to.chr$ -- 2
+            813 strings with 10755 characters,
+and the built_in function-call counts, 15223 in all, are:
+= -- 1345
+> -- 888
+< -- 25
++ -- 302
+- -- 270
+* -- 1175
+:= -- 2311
+add.period$ -- 98
+call.type$ -- 32
+change.case$ -- 183
+chr.to.int$ -- 32
+cite$ -- 69
+duplicate$ -- 740
+empty$ -- 1244
+format.name$ -- 320
+if$ -- 3222
+int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 39
-newline$ -- 193
-num.names$ -- 148
-pop$ -- 430
+missing$ -- 33
+newline$ -- 168
+num.names$ -- 128
+pop$ -- 380
 preamble$ -- 1
-purify$ -- 169
+purify$ -- 152
 quote$ -- 0
-skip$ -- 692
+skip$ -- 588
 stack$ -- 0
-substring$ -- 623
-swap$ -- 142
-text.length$ -- 11
+substring$ -- 498
+swap$ -- 107
+text.length$ -- 8
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 397
+type$ -- 347
 warning$ -- 5
-while$ -- 164
+while$ -- 138
 width$ -- 0
-write$ -- 476
-(There were 6 warnings)
+write$ -- 412
+(There was 1 error message)
