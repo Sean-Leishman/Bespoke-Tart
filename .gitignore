@@ -7,5 +7,6 @@ data/edacc/
 data/switchboard
 model/
 trained_models/
+trained_model/
 bespoketart.egg-info/
 build/
