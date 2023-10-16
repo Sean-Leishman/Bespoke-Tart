@@ -5,6 +5,9 @@ import argparse
 import logging
 import json
 import os
+import warnings
+
+from datetime import datetime
 
 from data import TranscriptDataset
 from types import SimpleNamespace
@@ -25,9 +28,9 @@ def build_parser():
                         help="true/false if cuda should be enabled")
     parser.add_argument('--load-model', type=str, default='false',
                         help="true/false if model should be loaded")
-    parser.add_argument('--load-path', type=str, default='model/',
+    parser.add_argument('--load-path', type=str, default='trained_model/',
                         help="load model config and weights from this file and ignore input configurations")
-    parser.add_argument('--save-path', type=str, default='model/',
+    parser.add_argument('--save-path', type=str, default='trained_model/',
                         help="model weights and config options save directory")
 
     parser.add_argument('--bert-type', type=str, default='distilbert',
@@ -50,6 +53,12 @@ def build_parser():
     return parser.parse_args()
 
 
+def get_new_filename(save_dir):
+    now = datetime.now()
+    current_time_str = now.strftime("%Y-%m-%d:%H-%M-%S")
+    return os.path.join(save_dir, current_time_str)
+
+
 def get_latest_model(path):
     list_dir = os.listdir(path)
     latest_model = None
@@ -66,14 +75,24 @@ def get_latest_model(path):
     return os.path.join(path, latest_model)
 
 
-def collate(batches):
-    collated = {}
-    for dir in batches:
-        for k, v in dir.items():
-            if k not in collated:
-                collated[k] = torch.tensor([])
-            collated[k] = torch.cat((collated[k], v.unsqueeze(0)), 0)
-    return collated
+def collate_fn(batch):
+    batched_data = {'input': None, 'output': None}
+    for key in ['input', 'output']:
+        input_ids = [item[key]['input_ids'] for item in batch]
+        attention_masks = [item[key]['attention_mask'] for item in batch]
+
+        input_ids_padded = torch.nn.utils.rnn.pad_sequence(
+            input_ids, batch_first=True, padding_value=0)
+        attention_masks_padded = torch.nn.utils.rnn.pad_sequence(
+            attention_masks, batch_first=True, padding_value=0)
+
+        if key == 'input':
+            batched_data = {'input_ids': input_ids_padded,
+                            'attention_mask': attention_masks_padded}
+        else:
+            batched_data[key] = {'input_ids': input_ids_padded,
+                                 'attention_mask': attention_masks_padded}
+    return batched_data
 
 
 def main(config):
@@ -116,7 +135,8 @@ def main(config):
 
     model.to(config.device)
 
-    criterion = torch.nn.BCEWithLogitsLoss()
+    criterion = torch.nn.BCEWithLogitsLoss(
+        pos_weight=torch.FloatTensor([1.5]).cuda())
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
 
     if (config.load_model == 'true'):
@@ -127,17 +147,19 @@ def main(config):
         trainer = Trainer(model=model, criterion=criterion,
                           optimizer=optimizer, config=config)
 
-    if not config.evaluate:
+    if config.evaluate == 'false':
         train_dl = DataLoader(TranscriptDataset(
-            "train", model.get_tokenizer()), batch_size=config.batch_size)
+            "train", model.get_tokenizer()), batch_size=config.batch_size,
+            collate_fn=collate_fn,
+            shuffle=True)
         test_dl = DataLoader(TranscriptDataset(
-            "test", model.get_tokenizer()), batch_size=config.batch_size)
+            "test", model.get_tokenizer()), batch_size=config.batch_size, collate_fn=collate_fn)
 
         logging.getLogger(__name__).info("model: train model")
         history = trainer.train(train_dl, test_dl)
     else:
         test_dl = DataLoader(TranscriptDataset(
-            "test", model.get_tokenizer()), batch_size=config.batch_size)
+            "test", model.get_tokenizer()), batch_size=config.batch_size, collate_fn=collate_fn)
 
         logging.getLogger(__name__).info("model: evaluate model")
         if not config.load_model:
@@ -151,6 +173,8 @@ def main(config):
 
 
 if __name__ == "__main__":
+    warnings.filterwarnings('always')
+
     config = build_parser()
     config.device = "cuda" if torch.cuda.is_available() and (
         config.cuda == "true") else "cpu"
