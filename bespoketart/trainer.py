@@ -5,6 +5,7 @@ import numpy as np
 
 import logging
 from tqdm import tqdm
+from sklearn.metrics import f1_score
 
 
 class Trainer:
@@ -113,12 +114,12 @@ class Trainer:
 
             input_ids = batch["input_ids"].to(self.device)
             attention_mask = batch["attention_mask"].to(self.device)
-            labels = batch["labels"].type(
-                torch.float).unsqueeze(1).to(self.device)
 
-            output = self.model.forward(
+            labels = self.generate_labels(batch['output']).to(self.device)
+
+            logits = self.model.forward(
                 input_ids, attention_mask=attention_mask)
-            loss = self.criterion(output, labels)
+            loss = self.calculate_loss(logits, labels)
             loss.backward()
             self.optimizer.step()
 
@@ -128,6 +129,16 @@ class Trainer:
         avg_loss = total_loss / len(train_dl)
 
         return avg_loss
+
+    def generate_labels(self, batch_output):
+        eot_id = self.model.tokenizer.convert_tokens_to_ids('[SEP]')
+
+        labels = (batch_output['input_ids'] == eot_id).any(dim=1).float()
+        return labels.unsqueeze(1)
+
+    def calculate_loss(self, output, labels):
+        loss = self.criterion(output, labels)
+        return loss
 
     def validate(self, test_dl):
         total_loss, total_count = 0, 0
@@ -140,25 +151,31 @@ class Trainer:
             for batch in progress_bar:
                 input_ids = batch['input_ids'].to(self.device)
                 attention_mask = batch['attention_mask'].to(self.device)
-                labels = batch['labels'].type(
-                    torch.float).unsqueeze(1).to(self.device)
 
-                output = self.model.forward(
+                labels = self.generate_labels(batch['output']).to(self.device)
+
+                logits = self.model.forward(
                     input_ids, attention_mask=attention_mask)
-                loss = self.criterion(output, labels)
+                loss = self.calculate_loss(logits, labels)
 
                 total_loss += float(loss)
                 total_count += len(labels)
 
-                predicted_trp = (output > 0.5).float()
+                probs = self.model.get_probability(logits)
+
+                predicted_trp = (probs > 0.5).float()
                 correct_predictions = (
                     predicted_trp == labels).float().sum().item()
                 total_correct += correct_predictions
 
                 predicted_trp_1 = predicted_trp.sum().item()
+                f1 = f1_score(torch.flatten(labels.cpu()),
+                              torch.flatten(predicted_trp.cpu()))
+                # print(torch.flatten(labels.cpu()))
+                # print(torch.flatten(predicted_trp.cpu()))
 
                 progress_bar.set_postfix_str(
-                    f'pred_1={predicted_trp_1} avg_valid_loss={total_loss/total_count: .4f}, avg_valid_correct={total_correct/total_count: .4f}')
+                    f'pred_1={predicted_trp_1} f1={f1: .4f} avg_valid_loss={total_loss/total_count: .4f}, avg_valid_correct={total_correct/total_count: .4f}')
 
             progress_bar.close()
         self.model.train()
