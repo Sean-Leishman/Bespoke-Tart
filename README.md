@@ -35,13 +35,32 @@ pip install -e .
 ```
 
 ## Training the Model 
-### Download Data ([HCRC Maptask](https://groups.inf.ed.ac.uk/maptask/transcripts/))
+### Download Data 
+#### EDACC - The Edinburgh Interational Accents of English Corpus 
+Can be found [here](https://groups.inf.ed.ac.uk/edacc/) where the entire corpus dataset can be downloaded. 
+If you want to do so automatically please run the following from the project root directory.
+```
+mkdir data/edacc
+cd data/edacc/ && ./edacc.wget.sh
+```
+
+For more information on the structure of the data see [here](https://github.com/Sean-Leishman/Bespoke-Tart/data/edacc/README.md)
+
+#### Switchboard
+Was collected in a licensed manner so data is distributed privately
+
+For more information on the structure of the data see [here](https://github.com/Sean-Leishman/Bespoke-Tart/data/switchboard/README.md)
+
+
+#### HCRC MapTask 
+([HCRC Maptask](https://groups.inf.ed.ac.uk/maptask/transcripts/))
 1. Retreive files
 ```
-cd data/maptask
-./maptask.wget.sh
+cd data/maptask && ./maptask.wget.sh
 ```
-Transcripts are located at `data/maptask/transcripts/`
+Transcripts are located at `data/maptask/transcripts/`edacc
+
+For more information on the structure of the data see [here](https://github.com/Sean-Leishman/Bespoke-Tart/data/maptask/README.md)
 
 ### Train Model 
 ```
