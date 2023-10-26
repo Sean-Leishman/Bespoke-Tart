@@ -96,6 +96,51 @@ def sub_regex(s):
     return s.strip()  # remove whitespace start/end
 
 
+def extract_speaker_timings(transcript, min_word_diff=0.05):
+    out = [[], []]
+    for speaker in [0, 1]:
+        for utterance in transcript[speaker]:
+            start, end = utterance["wfeats"][0]["start"], utterance["wfeats"][0]["end"]
+
+            for word in utterance["wfeats"][1:]:
+                if word["start"] - end < min_word_diff:
+                    end = word["end"]
+                else:
+                    out[speaker].append((start, end))
+                    start = word["start"]
+                    end = word["end"]
+
+            out[speaker].append((start, end))
+    print_transcript_timing(transcript, out)
+    return out
+
+
+def print_transcript_timing(dialog, timings):
+    dialog = dialog[0]
+    timing = timings[0]
+
+    for idx in range(len(dialog)):
+        print(dialog[idx])
+        print(timing[idx])
+
+
+def extract_dialog(filenames):
+    trans_filenameA, words_filenameA, trans_filenameB, words_filenameB = filenames
+
+    utterancesA = _extract_utterance_word_feats(
+        trans_filenameA,
+        words_filenameA,
+        speaker='A'
+    )
+    utterancesB = _extract_utterance_word_feats(
+        trans_filenameB,
+        words_filenameB,
+        speaker='B'
+    )
+
+    return [utterancesA, utterancesB]
+
+
 def _extract_word_features(filename, speaker):
     def remove_multiple_whitespace(s):
         s = re.sub(r"\t", " ", s)
@@ -131,42 +176,6 @@ def _extract_word_features(filename, speaker):
     return word_feats
 
 
-def extract_speaker_timings(transcript, min_word_diff=0.05):
-    out = [[], []]
-    for speaker in [0, 1]:
-        for utterance in transcript[speaker]:
-            start, end = utterance["wfeats"][0]["start"], utterance["wfeats"][-1]["end"]
-
-            for word in utterance["wfeats"][1:]:
-                if word["start"] - end < min_word_diff:
-                    end = word["end"]
-                else:
-                    out[speaker].append((start, end))
-                    start = word["start"]
-                    end = word["end"]
-
-            out[speaker].append((start, end))
-
-    return out
-
-
-def extract_dialog(filenames):
-    trans_filenameA, words_filenameA, trans_filenameB, words_filenameB = filenames
-
-    utterancesA = _extract_utterance_word_feats(
-        trans_filenameA,
-        words_filenameA,
-        speaker='A'
-    )
-    utterancesB = _extract_utterance_word_feats(
-        trans_filenameB,
-        words_filenameB,
-        speaker='B'
-    )
-
-    return [utterancesA, utterancesB]
-
-
 def _extract_utterance_word_feats(trans_filename, words_filename, speaker):
     word_feats = _extract_word_features(words_filename, speaker)
 
@@ -196,3 +205,84 @@ def _extract_utterance_word_feats(trans_filename, words_filename, speaker):
                 }
             )
     return utterances
+
+
+def remove_words_from_dialog(dialog):
+    new_dialog = [[], []]
+    for speaker in [0, 1]:
+        for utterance in dialog[speaker]:
+            new_dialog[speaker].append({
+                "text": utterance["text"],
+                "start": utterance["start"],
+                "end": utterance["end"]
+            })
+
+    return new_dialog
+
+
+def combine_dialogue_with_timings(dialogue, timings):
+    i1, j1 = 0, 0
+    i2, j2 = 0, 0
+    curr_speaker = None
+    new_dialogue = []
+    speaker = []
+
+    curr_word_idxA = 0
+    curr_word_idxB = 0
+    while i1 < len(timings[0]) and j1 < len(timings[1]):
+        startA, endA = timings[0][i1]
+        startB, endB = timings[1][j1]
+
+        if startA < startB:
+            words = _add_dialogue_for_timing(
+                dialogue[0][i2]['wfeats'], endA, curr_word_idxA)
+            new_dialogue.extend(words)
+            speaker.extend(["A" for _ in range(len(words))])
+
+            if len(words) + curr_word_idxA == len(dialogue[0][i2]['wfeats']):
+                curr_word_idxA = 0
+                i2 += 1
+            else:
+                curr_word_idxA += len(words)
+            i1 += 1
+        else:
+            words = _add_dialogue_for_timing(
+                dialogue[1][j2]['wfeats'], endB, curr_word_idxB)
+            new_dialogue.extend(words)
+            speaker.extend(["B" for _ in range(len(words))])
+
+            if len(words) + curr_word_idxB == len(dialogue[1][j2]['wfeats']):
+                curr_word_idxB = 0
+                j2 += 1
+            else:
+                curr_word_idxB += len(words)
+
+            j1 += 1
+
+    _pp_dialogue(new_dialogue, speaker)
+    return new_dialogue, speaker
+
+
+def _pp_dialogue(dialogue, speaker):
+    out = ""
+    start = 0
+    curr_speaker = None
+    for idx in range(len(dialogue)):
+        if curr_speaker is None or curr_speaker != speaker[idx]:
+            curr_speaker = speaker[idx]
+            out += f": {start} - {dialogue[idx-1]['end']}"
+            start = dialogue[idx]['start']
+            out += f"\n{curr_speaker}"
+        out += f" {dialogue[idx]['word']}"
+
+    print(out)
+
+
+def _add_dialogue_for_timing(text, end, curr_idx=0):
+    curr = []
+    for idx in range(curr_idx, len(text)):
+        curr.append(text[idx])
+        if text[idx]['end'] == end:
+            return curr
+
+    return []

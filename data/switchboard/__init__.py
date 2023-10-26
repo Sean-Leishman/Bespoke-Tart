@@ -5,7 +5,8 @@ from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 
 from sklearn.model_selection import train_test_split
-from utils import extract_dialog, extract_speaker_timings
+from utils import extract_dialog, extract_speaker_timings, \
+    combine_dialogue_with_timings, remove_words_from_dialog
 
 
 def get_abs_path(filepath):
@@ -108,18 +109,16 @@ class SwitchboardDataset(Dataset):
         self.logger.info(f"data ({self.split}): loading switchboard data")
 
         dialogs = []
-        for key in list(self.filenames.keys())[:2]:
+        for key in list(self.filenames.keys()):
             dialog = extract_dialog(self.filenames[key])
             vad = extract_speaker_timings(dialog)
+            # dialog = remove_words_from_dialog(dialog)
 
-            print(dialog, vad)
-
+            dialog, speaker = combine_dialogue_with_timings(dialog, vad)
         return dialogs, None
 
     def save_dialogs(self, prefix_dir):
         # Assume self.filenames correspond with self.dialogs
-        print(len(self.dialogs))
-        print(len(self.filenames))
         for idx, key in enumerate(self.filenames):
             filename = key
             filename = os.path.join(prefix_dir, filename)

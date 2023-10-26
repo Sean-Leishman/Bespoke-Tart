@@ -11,8 +11,7 @@ def get_abs_path(filepath):
     return os.path.join(os.path.abspath(__file__), filepath)
 
 
-DATASETS = [  # MapTaskDataset,
-    EdAccDataset]
+DATASETS = [EdAccDataset]
 
 
 class TranscriptDataset(Dataset):
