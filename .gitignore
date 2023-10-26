@@ -4,6 +4,7 @@ venv/
 data/maptask/transcripts 
 data/maptask/parsed_transcripts 
 data/edacc/data 
+data/switchboard/splits/data
 data/switchboard/switchboard
 model/
 trained_models/
