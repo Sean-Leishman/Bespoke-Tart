@@ -6,6 +6,21 @@ OmitText = [
     "[vocalized-noise]",
 ]
 
+BACKCHANNELS = [
+    "yeah",
+    "um-hum",
+    "uh-huh",
+    "right",
+    "oh",
+    "oh yeah",
+    "yeah yeah",
+    "right right",
+    "oh really",
+    "um-hum um-hum",
+    "uh-huh uh-huh",
+    "oh uh-huh"
+]
+
 
 def _clean_dialogs():
     pass
@@ -229,15 +244,21 @@ def combine_dialogue_with_timings(dialogue, timings):
 
     curr_word_idxA = 0
     curr_word_idxB = 0
+
+    print(dialogue)
+
     while i1 < len(timings[0]) and j1 < len(timings[1]):
         startA, endA = timings[0][i1]
         startB, endB = timings[1][j1]
 
         if startA < startB:
-            words = _add_dialogue_for_timing(
-                dialogue[0][i2]['wfeats'], endA, curr_word_idxA)
-            new_dialogue.extend(words)
-            speaker.extend(["A" for _ in range(len(words))])
+            utterance = _add_dialogue_for_timing(
+                dialogue[0][i2], endA, curr_word_idxA)
+            utterance['speaker'] = 'A'
+            words = utterance['text']
+
+            utterance['text'] = " ".join(words)
+            new_dialogue.append(utterance)
 
             if len(words) + curr_word_idxA == len(dialogue[0][i2]['wfeats']):
                 curr_word_idxA = 0
@@ -246,10 +267,13 @@ def combine_dialogue_with_timings(dialogue, timings):
                 curr_word_idxA += len(words)
             i1 += 1
         else:
-            words = _add_dialogue_for_timing(
-                dialogue[1][j2]['wfeats'], endB, curr_word_idxB)
-            new_dialogue.extend(words)
-            speaker.extend(["B" for _ in range(len(words))])
+            utterance = _add_dialogue_for_timing(
+                dialogue[1][j2], endB, curr_word_idxB)
+            utterance['speaker'] = 'B'
+            words = utterance['text']
+
+            utterance['text'] = " ".join(words)
+            new_dialogue.append(utterance)
 
             if len(words) + curr_word_idxB == len(dialogue[1][j2]['wfeats']):
                 curr_word_idxB = 0
@@ -259,30 +283,84 @@ def combine_dialogue_with_timings(dialogue, timings):
 
             j1 += 1
 
-    _pp_dialogue(new_dialogue, speaker)
+    _pp_dialogue(new_dialogue)
     return new_dialogue, speaker
 
 
-def _pp_dialogue(dialogue, speaker):
+def _pp_dialogue(dialogue):
     out = ""
     start = 0
     curr_speaker = None
+
     for idx in range(len(dialogue)):
-        if curr_speaker is None or curr_speaker != speaker[idx]:
-            curr_speaker = speaker[idx]
+        if curr_speaker is None or curr_speaker != dialogue[idx]['speaker']:
+            curr_speaker = dialogue[idx]['speaker']
             out += f": {start} - {dialogue[idx-1]['end']}"
             start = dialogue[idx]['start']
             out += f"\n{curr_speaker}"
-        out += f" {dialogue[idx]['word']}"
+        out += f" {dialogue[idx]['text']}"
 
     print(out)
 
 
 def _add_dialogue_for_timing(text, end, curr_idx=0):
-    curr = []
-    for idx in range(curr_idx, len(text)):
-        curr.append(text[idx])
-        if text[idx]['end'] == end:
+    curr = {}
+
+    if curr_idx > len(text['wfeats']):
+        return []
+
+    curr['start'] = text['wfeats'][curr_idx]['start']
+    curr['text'] = []
+    for idx in range(curr_idx, len(text['wfeats'])):
+        curr['text'].append(text['wfeats'][idx]['word'])
+        if text['wfeats'][idx]['end'] == end:
+            curr['end'] = text['wfeats'][idx]['end']
             return curr
 
     return []
+
+
+def remove_backchannels(dialogs, speakers):
+    print(dialogs, "here")
+    last_endA = 0
+    last_endB = 0
+
+    backchannelA = None
+    backchannelB = None
+
+    output = []
+
+    for idx in range(len(dialogs)):
+        if dialogs[idx]['speaker'] == 'A':
+            if backchannelA is not None:
+                if not _remove_backchannel(backchannelA, dialogs[idx]):
+                    output.append(backchannelA)
+
+            backchannelA = _potential_backchannel(last_endA, dialogs[idx])
+            if backchannelA is None:
+                output.append(dialogs[idx])
+            last_endA = dialogs[idx]['end']
+        else:
+            if backchannelB is not None:
+                if not _remove_backchannel(backchannelB, dialogs[idx]):
+                    output.append(backchannelB)
+
+            backchannelB = _potential_backchannel(last_endB, dialogs[idx])
+            if backchannelB is None:
+                output.append(dialogs[idx])
+            last_endB = dialogs[idx]['end']
+
+    _pp_dialogue(dialogs)
+    _pp_dialogue(output)
+    return dialogs, speakers
+
+
+def _remove_backchannel(backchannelA, dialog):
+    return (dialog['start'] - backchannelA['end']) > 0.5
+
+
+def _potential_backchannel(last_phrase, current_phrase):
+    if (current_phrase['start'] - last_phrase) > 0.5 and current_phrase['text'] in BACKCHANNELS:
+        return current_phrase
+
+    return None

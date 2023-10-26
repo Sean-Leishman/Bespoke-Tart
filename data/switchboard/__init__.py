@@ -6,7 +6,7 @@ from transformers import AutoTokenizer
 
 from sklearn.model_selection import train_test_split
 from utils import extract_dialog, extract_speaker_timings, \
-    combine_dialogue_with_timings, remove_words_from_dialog
+    combine_dialogue_with_timings, remove_backchannels
 
 
 def get_abs_path(filepath):
@@ -109,12 +109,13 @@ class SwitchboardDataset(Dataset):
         self.logger.info(f"data ({self.split}): loading switchboard data")
 
         dialogs = []
-        for key in list(self.filenames.keys()):
+        for key in list(self.filenames.keys())[:2]:
             dialog = extract_dialog(self.filenames[key])
             vad = extract_speaker_timings(dialog)
             # dialog = remove_words_from_dialog(dialog)
 
             dialog, speaker = combine_dialogue_with_timings(dialog, vad)
+            dialog, speaker = remove_backchannels(dialog, speaker)
         return dialogs, None
 
     def save_dialogs(self, prefix_dir):
