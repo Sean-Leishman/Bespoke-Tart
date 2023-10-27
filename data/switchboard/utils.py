@@ -126,7 +126,7 @@ def extract_speaker_timings(transcript, min_word_diff=0.05):
                     end = word["end"]
 
             out[speaker].append((start, end))
-    print_transcript_timing(transcript, out)
+    # print_transcript_timing(transcript, out)
     return out
 
 
@@ -245,8 +245,6 @@ def combine_dialogue_with_timings(dialogue, timings):
     curr_word_idxA = 0
     curr_word_idxB = 0
 
-    print(dialogue)
-
     while i1 < len(timings[0]) and j1 < len(timings[1]):
         startA, endA = timings[0][i1]
         startB, endB = timings[1][j1]
@@ -254,6 +252,11 @@ def combine_dialogue_with_timings(dialogue, timings):
         if startA < startB:
             utterance = _add_dialogue_for_timing(
                 dialogue[0][i2], endA, curr_word_idxA)
+
+            if utterance == []:
+                i1 += 1
+                continue
+
             utterance['speaker'] = 'A'
             words = utterance['text']
 
@@ -269,6 +272,11 @@ def combine_dialogue_with_timings(dialogue, timings):
         else:
             utterance = _add_dialogue_for_timing(
                 dialogue[1][j2], endB, curr_word_idxB)
+
+            if utterance == []:
+                j1 += 1
+                continue
+
             utterance['speaker'] = 'B'
             words = utterance['text']
 
@@ -283,7 +291,7 @@ def combine_dialogue_with_timings(dialogue, timings):
 
             j1 += 1
 
-    _pp_dialogue(new_dialogue)
+    # _pp_dialogue(new_dialogue)
     return new_dialogue, speaker
 
 
@@ -321,7 +329,6 @@ def _add_dialogue_for_timing(text, end, curr_idx=0):
 
 
 def remove_backchannels(dialogs, speakers):
-    print(dialogs, "here")
     last_endA = 0
     last_endB = 0
 
@@ -350,9 +357,21 @@ def remove_backchannels(dialogs, speakers):
                 output.append(dialogs[idx])
             last_endB = dialogs[idx]['end']
 
-    _pp_dialogue(dialogs)
-    _pp_dialogue(output)
-    return dialogs, speakers
+    # _pp_dialogue(dialogs)
+    # _pp_dialogue(output)
+    return output, speakers
+
+
+"""
+Actually just need to convert into format for parent dataset.
+Where in __getitem__(idx) idx refers to the conversation and returns all turns within
+a conversation
+So this function just needs to return the turn list for a conversation
+"""
+
+
+def combine_consecutive_trps(dialogs):
+    return dialogs
 
 
 def _remove_backchannel(backchannelA, dialog):

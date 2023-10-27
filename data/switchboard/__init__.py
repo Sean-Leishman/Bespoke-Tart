@@ -5,8 +5,8 @@ from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 
 from sklearn.model_selection import train_test_split
-from utils import extract_dialog, extract_speaker_timings, \
-    combine_dialogue_with_timings, remove_backchannels
+from .utils import extract_dialog, extract_speaker_timings, \
+    combine_dialogue_with_timings, remove_backchannels, combine_consecutive_trps
 
 
 def get_abs_path(filepath):
@@ -24,21 +24,20 @@ FILENAMES_FILE = get_abs_path(
 
 
 class SwitchboardDataset(Dataset):
-    def __init__(self, split="train", tokenizer=AutoTokenizer.from_pretrained("bert-base-uncased")):
+    def __init__(self, split="train"):
         self.logger = logging.getLogger(__name__)
 
-        self.tokenizer = tokenizer
         self.split = split
 
         self.filenames = self.read_file_splits()
-        self.dialogs, self.labels = self.read_dialog()
+        self.dialogs = self.read_dialog()
         # self.tokens = self.tokenize()
 
     def __len__(self):
         return len(self.dialogs)
 
     def __getitem__(self, idx):
-        return None
+        return self.dialogs[idx]
 
     def read_file_splits(self):
         self.logger.info(f"data: reading {self.split} data")
@@ -109,14 +108,22 @@ class SwitchboardDataset(Dataset):
         self.logger.info(f"data ({self.split}): loading switchboard data")
 
         dialogs = []
-        for key in list(self.filenames.keys())[:2]:
+        for key in list(self.filenames.keys())[:100]:
+            print(key)
+
             dialog = extract_dialog(self.filenames[key])
             vad = extract_speaker_timings(dialog)
             # dialog = remove_words_from_dialog(dialog)
 
             dialog, speaker = combine_dialogue_with_timings(dialog, vad)
             dialog, speaker = remove_backchannels(dialog, speaker)
-        return dialogs, None
+
+            dialog = combine_consecutive_trps(dialog)
+
+            dialogs.append(dialog)
+
+        # print(dialogs[0])
+        return dialogs
 
     def save_dialogs(self, prefix_dir):
         # Assume self.filenames correspond with self.dialogs
