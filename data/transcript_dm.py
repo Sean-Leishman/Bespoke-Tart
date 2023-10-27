@@ -34,7 +34,7 @@ def collate_fn(batch):
     return batched_data
 
 
-DATASETS = [SwitchboardDataset]
+DATASETS = [EdAccDataset, SwitchboardDataset]
 CACHE_PATH = get_abs_path(os.path.join(".cache", "dataset"))
 
 
