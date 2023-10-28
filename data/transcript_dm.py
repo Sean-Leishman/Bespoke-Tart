@@ -34,7 +34,7 @@ def collate_fn(batch):
     return batched_data
 
 
-DATASETS = [EdAccDataset, SwitchboardDataset]
+DATASETS = [SwitchboardDataset, EdAccDataset]
 CACHE_PATH = get_abs_path(os.path.join(".cache", "dataset"))
 
 
@@ -42,7 +42,7 @@ class TranscriptDataset(Dataset):
     def __init__(self, split="train",
                  tokenizer=None,
                  savepath=None,
-                 overwrite=True,
+                 overwrite=False,
                  load_from_cache_file=False,
                  max_prior_window_size=50,
                  context_window=2,
@@ -91,7 +91,7 @@ class TranscriptDataset(Dataset):
         return dict
 
     def get_save_load_path(self):
-        save_load_dir = get_abs_path(os.path.join(self.savepath))
+        save_load_dir = get_abs_path(os.path.dirname(self.savepath))
 
         if not os.path.exists(save_load_dir):
             os.mkdir(save_load_dir)
@@ -100,6 +100,7 @@ class TranscriptDataset(Dataset):
 
     def prepare_data(self):
         if self.load_from_cache_file or not self.overwrite:
+            self.setup()
             return
 
         for load_dataset in DATASETS:
@@ -120,6 +121,7 @@ class TranscriptDataset(Dataset):
         self.prefix_sum = saved_ds.prefix_sum
 
     def save_to_disk(self):
+        self.logger.info(f"data {self.split}: saving combined transcript")
         torch.save(self, self.get_save_load_path())
 
     def get_dialog_idx(self, token_idx):
@@ -150,9 +152,18 @@ class TranscriptDataset(Dataset):
                 tokens = self.tokenize_sentence(output['dialog'])
 
                 output['input_ids'] = tokens['input_ids']
-                output['token_type_ids'] = tokens['token_type_ids']
                 output['attention_mask'] = tokens['attention_mask']
 
+                current_speaker = dataset[0]['speaker']
+                token_type_ids = [[]]
+                for token in output['input_ids'][0]:
+                    # Is [SEP] token self.tokenizer.encode('[SEP]') -> [101, 102, 102]
+                    if token == 102:
+                        current_speaker = 'A' if current_speaker == 'B' else 'A'
+
+                    token_type_ids[0].append(0 if current_speaker == 'A' else 1)
+
+                output['token_type_ids'] = torch.tensor(token_type_ids)
                 result.append(output)
 
         self.logger.info(
