@@ -46,6 +46,7 @@ class TranscriptDataset(Dataset):
                  load_from_cache_file=False,
                  max_prior_window_size=50,
                  context_window=2,
+                 window_step=10,
                  post_window_size=10):
         self.logger = logging.getLogger(__name__)
 
@@ -64,11 +65,12 @@ class TranscriptDataset(Dataset):
         self.max_prior_window_size = max_prior_window_size
         self.context_window = context_window
         self.post_window_size = post_window_size
+        self.window_step = window_step
 
         self.prepare_data()
 
     def __len__(self):
-        return sum([len(i['input_ids'][0]) for i in self.data])
+        return self.prefix_sum[-1]
 
     def __getitem__(self, idx):
         dialog_idx, token_idx = self.get_dialog_idx(idx)
@@ -127,7 +129,7 @@ class TranscriptDataset(Dataset):
     def get_dialog_idx(self, token_idx):
         dialog_idx = next(i for i, v in enumerate(
             self.prefix_sum) if v > token_idx) - 1
-        token_idx = token_idx - self.prefix_sum[dialog_idx]
+        token_idx = (token_idx - self.prefix_sum[dialog_idx]) * self.window_step
 
         return dialog_idx, token_idx
 
@@ -183,7 +185,7 @@ class TranscriptDataset(Dataset):
         indexes = [0]
         for conv in self.data:
             indexes.append(
-                len(conv['input_ids'][0]) + indexes[-1])
+                (len(conv['input_ids'][0])//self.window_step + indexes[-1]))
 
         return indexes
 
