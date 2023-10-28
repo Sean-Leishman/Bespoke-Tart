@@ -33,7 +33,7 @@ def build_parser():
     parser.add_argument('--save-path', type=str, default='trained_model/',
                         help="model weights and config options save directory")
 
-    parser.add_argument('--bert-type', type=str, default='distilbert',
+    parser.add_argument('--bert-type', type=str, default='bert',
                         help="choose which BERT version to use (bert, distilbert)")
     parser.add_argument('--bert-finetuning', type=str, default='false',
                         help='true/false if BERT should be finetuned')
