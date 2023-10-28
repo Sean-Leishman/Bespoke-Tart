@@ -1,6 +1,8 @@
 import torch
 import logging
 
+from argparse import ArgumentParser
+
 from transformers import BertModel, DistilBertModel, AutoTokenizer
 
 
@@ -36,12 +38,22 @@ class DistilledBert(torch.nn.Module):
             input_ids, attention_mask=attention_mask)
 
         # mean_pooled = torch.mean(bert_output.last_hidden_state, dim=1)
-        x = self.dropout(0.2)
+
+        # (batchsize, sequencelength, hidden state size) (128, 50, 768)
+        x = bert_output[0]
+
+        # (128, 1, 768)
+        x = torch.mean(x, dim=1)
+
+        # (128, 1, 20)
         x = self.fc1(x)
+
+        # (128, 1, 20)
         x = self.relu(x)
 
-        final_output = self.output(x)
-        return final_output
+        # (128, 1, 1)
+        logits = self.output(x)
+        return logits
 
     def get_probability(self, logits):
         return self.output_activation(logits)
@@ -58,6 +70,7 @@ class DistilledBert(torch.nn.Module):
 
     def get_tokenizer(self):
         return self.tokenizer
+
 
 
 class Bert(torch.nn.Module):
@@ -89,12 +102,15 @@ class Bert(torch.nn.Module):
             input_ids, attention_mask=attention_mask)
 
         # mean_pooled = torch.mean(bert_output.last_hidden_state, dim=1)
-        x = bert_output[0]
-        x = self.fc1(x)
-        x = self.relu(x)
 
-        final_output = self.output(x)
-        return final_output
+        # (batchsize, sequencelength, hidden state size) (128, 50, 768)
+        x = bert_output[0]
+        x = torch.mean(x, dim=1) # (128, 1, 768)
+        x = self.fc1(x) # (127, 1, 20)
+        x = self.relu(x) # (128, 1, 20)
+
+        logits = self.output(x)
+        return logits
 
     def get_probability(self, logits):
         return self.output_activation(logits)
@@ -111,3 +127,10 @@ class Bert(torch.nn.Module):
 
     def get_tokenizer(self):
         return self.tokenizer
+
+    @staticmethod
+    def add_model_specific_args(parent_parser):
+        parser = ArgumentParser(parents=[parent_parser])
+
+        # May be useful to separate params
+
