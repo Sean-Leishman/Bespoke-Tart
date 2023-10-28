@@ -2,11 +2,19 @@ import torch
 import os
 import json
 import numpy as np
+from datetime import datetime
 
 import logging
 from tqdm import tqdm
 from sklearn.metrics import f1_score
 
+def get_abs_path(filepath):
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), filepath)
+
+def get_new_filename(save_dir):
+    now = datetime.now()
+    current_time_str = now.strftime("%Y-%m-%d:%H-%M-%S")
+    return os.path.join(save_dir, current_time_str)
 
 class Trainer:
     def __init__(self, model=None, criterion=None, optimizer=None, config=None,
@@ -25,6 +33,7 @@ class Trainer:
             "train_loss": [],
             "val_loss": [],
             "val_correct": [],
+            "val_f1":[]
         }
 
         self.best = {
@@ -35,11 +44,12 @@ class Trainer:
             'config': config,
         }
 
-        self.save_path = os.path.join(config.save_path)
+        self.save_path = get_abs_path(get_new_filename(config.save_path))
         if not os.path.isdir(self.save_path):
             os.mkdir(self.save_path)
 
         with open(os.path.join(self.save_path, "config.json"), "w") as config_file:
+            print(config)
             json.dump(vars(config), config_file)
 
         self.logger = logging.getLogger(__name__)
@@ -47,6 +57,7 @@ class Trainer:
         self.load_model_file = load_from_checkpoint
         if self.load_model_file is not None:
             self.load_from_checkpoint()
+
 
     def load_from_checkpoint(self):
         checkpoint = torch.load(self.load_model_file)
@@ -66,16 +77,15 @@ class Trainer:
 
         for idx in progress_bar:
             avg_train_loss = self.train_epoch(train_dl)
-            avg_valid_loss, avg_valid_correct = self.validate(test_dl)
+            avg_valid_loss, avg_valid_correct, avg_valid_f1 = self.validate(test_dl)
 
-            progress_bar.set_postfix_str(
-                f'train_loss={avg_train_loss: .4f}, avg_valid_loss={avg_valid_loss: .4f}, avg_valid_correct={avg_valid_correct: .4f}')
             # self.logger.info(
             #    f'train_loss= {avg_train_loss: .4f}, avg_valid_loss= {avg_valid_loss: .4f}, avg_valid_correct={avg_valid_correct: .4f}')
 
             self.history["train_loss"].append(avg_train_loss)
             self.history["val_loss"].append(avg_valid_loss)
             self.history["val_correct"].append(avg_valid_correct)
+            self.history["val_f1"].append(avg_valid_f1)
             self.save_history(self.save_path)
 
             if avg_valid_loss < best_loss:
@@ -105,7 +115,7 @@ class Trainer:
 
     def train_epoch(self, train_dl):
         self.model.train()
-        total_loss = 0
+        total_loss, total_count = 0,0
 
         progress_bar = tqdm(train_dl, desc='Training')
 
@@ -114,16 +124,21 @@ class Trainer:
 
             input_ids = batch["input_ids"].to(self.device)
             attention_mask = batch["attention_mask"].to(self.device)
+            token_type_ids = batch["token_type_ids"].to(self.device)
 
             labels = self.generate_labels(batch['output']).to(self.device)
 
             logits = self.model.forward(
-                input_ids, attention_mask=attention_mask)
+                input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
             loss = self.calculate_loss(logits, labels)
             loss.backward()
             self.optimizer.step()
 
             total_loss += loss.item()
+            total_count += 1
+
+            progress_bar.set_postfix_str(
+                f'train_loss={total_loss/total_count: .4f}')
 
         progress_bar.close()
         avg_loss = total_loss / len(train_dl)
@@ -142,24 +157,25 @@ class Trainer:
 
     def validate(self, test_dl):
         total_loss, total_count = 0, 0
-        total_correct = 0
+        total_correct, total_f1 = 0,0
 
         self.model.eval()
         with torch.no_grad():
             progress_bar = tqdm(test_dl, desc='Validation')
 
-            for batch in progress_bar:
+            for step, batch in enumerate(progress_bar):
                 input_ids = batch['input_ids'].to(self.device)
                 attention_mask = batch['attention_mask'].to(self.device)
+                token_type_ids = batch['token_type_ids'].to(self.device)
 
                 labels = self.generate_labels(batch['output']).to(self.device)
 
                 logits = self.model.forward(
-                    input_ids, attention_mask=attention_mask)
+                    input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
                 loss = self.calculate_loss(logits, labels)
 
                 total_loss += float(loss)
-                total_count += len(labels)
+                total_count += 1
 
                 probs = self.model.get_probability(logits)
 
@@ -171,15 +187,16 @@ class Trainer:
                 predicted_trp_1 = predicted_trp.sum().item()
                 f1 = f1_score(torch.flatten(labels.cpu()),
                               torch.flatten(predicted_trp.cpu()))
+                total_f1 += f1
                 # print(torch.flatten(labels.cpu()))
                 # print(torch.flatten(predicted_trp.cpu()))
 
                 progress_bar.set_postfix_str(
-                    f'pred_1={predicted_trp_1} f1={f1: .4f} avg_valid_loss={total_loss/total_count: .4f}, avg_valid_correct={total_correct/total_count: .4f}')
+                    f'f1={total_f1/total_count: .4f} avg_valid_loss={total_loss/total_count: .4f}, avg_valid_correct={total_correct/total_count: .4f}')
 
             progress_bar.close()
         self.model.train()
-        return total_loss / total_count, total_correct / total_count
+        return total_loss / total_count, total_correct / total_count, total_f1/total_count
 
     def save_training(self, path):
         torch.save(self.best, path)
@@ -187,4 +204,12 @@ class Trainer:
     def save_history(self, path):
         np.save(os.path.join(path, "train_loss"), self.history["train_loss"])
         np.save(os.path.join(path, "val_loss"), self.history["val_loss"])
+        np.save(os.path.join(path, "val_f1"), self.history["val_f1"])
         np.save(os.path.join(path, "val_correct"), self.history["val_correct"])
+
+    def print_dialogue(self, input_ids, prediction, output, label):
+        output = f"Input: {self.model.tokenizer.decode(input_ids)}\n"
+        output += f"Output: {self.model.tokenizer.decode(output['input_ids'])}\n"
+        output += f"Prediction: {prediction}, Label: {label}"
+
+        print(output)

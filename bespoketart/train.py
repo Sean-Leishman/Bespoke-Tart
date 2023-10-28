@@ -15,6 +15,7 @@ from model import Bert, DistilledBert
 from trainer import Trainer
 
 
+
 def build_logger():
     logging.basicConfig(format='%(asctime)s - %(message)s',
                         datefmt='%d-%b-%y %H:%M:%S', level=logging.INFO)
@@ -33,7 +34,7 @@ def build_parser():
     parser.add_argument('--save-path', type=str, default='trained_model/',
                         help="model weights and config options save directory")
 
-    parser.add_argument('--bert-type', type=str, default='bert',
+    parser.add_argument('--bert-type', type=str, default='distilbert',
                         help="choose which BERT version to use (bert, distilbert)")
     parser.add_argument('--bert-finetuning', type=str, default='false',
                         help='true/false if BERT should be finetuned')
@@ -43,20 +44,24 @@ def build_parser():
 
     parser.add_argument('--epoch-size', type=int, default=10)
     parser.add_argument('--batch-size', type=int, default=128)
-    parser.add_argument('--learning-rate', type=float, default=0.0002)
+    parser.add_argument('--learning-rate', type=float, default=0.002)
     parser.add_argument('--early-stop', type=int, default=5,
                         help='number of iterations without improvement for early stop')
 
     parser.add_argument('--evaluate', type=str, default='false',
                         help='model should only be evaluated. load-model and load-path should be set')
 
+    parser.add_argument('--description', type=str, default='',
+                        help="description of model")
+
+    parser.add_argument('--loss-weight', type=float, default=1.355,
+                        help="for binary classification and weighting EOTs")
+
+    # Dataset
+    parser.add_argument('--overwrite', type=str, default="false",
+                        help="overwrite and regenerate dataset")
     return parser.parse_args()
 
-
-def get_new_filename(save_dir):
-    now = datetime.now()
-    current_time_str = now.strftime("%Y-%m-%d:%H-%M-%S")
-    return os.path.join(save_dir, current_time_str)
 
 
 def get_latest_model(path):
@@ -80,18 +85,23 @@ def collate_fn(batch):
     for key in ['input', 'output']:
         input_ids = [item[key]['input_ids'] for item in batch]
         attention_masks = [item[key]['attention_mask'] for item in batch]
+        token_type_ids = [item[key]['token_type_ids'] for item in batch]
 
         input_ids_padded = torch.nn.utils.rnn.pad_sequence(
             input_ids, batch_first=True, padding_value=0)
         attention_masks_padded = torch.nn.utils.rnn.pad_sequence(
             attention_masks, batch_first=True, padding_value=0)
+        token_type_ids_padded = torch.nn.utils.rnn.pad_sequence(
+            token_type_ids, batch_first=True, padding_value=0)
 
         if key == 'input':
             batched_data = {'input_ids': input_ids_padded,
-                            'attention_mask': attention_masks_padded}
+                            'attention_mask': attention_masks_padded,
+                            'token_type_ids': token_type_ids_padded}
         else:
             batched_data[key] = {'input_ids': input_ids_padded,
-                                 'attention_mask': attention_masks_padded}
+                                 'attention_mask': attention_masks_padded,
+                                 'token_type_ids': token_type_ids_padded}
     return batched_data
 
 
@@ -136,7 +146,7 @@ def main(config):
     model.to(config.device)
 
     criterion = torch.nn.BCEWithLogitsLoss(
-        pos_weight=torch.FloatTensor([1.5]).cuda())
+        pos_weight=torch.FloatTensor([config.loss_weight]).to(config.device))
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
 
     if (config.load_model == 'true'):
@@ -149,11 +159,23 @@ def main(config):
 
     if config.evaluate == 'false':
         train_dl = DataLoader(TranscriptDataset(
-            "train", model.get_tokenizer()), batch_size=config.batch_size,
+                split="train",
+                tokenizer=model.get_tokenizer(),
+                overwrite=True if config.overwrite == 'true' else False,
+            ),
+            batch_size=config.batch_size,
             collate_fn=collate_fn,
-            shuffle=True)
+            shuffle=True
+        )
         test_dl = DataLoader(TranscriptDataset(
-            "test", model.get_tokenizer()), batch_size=config.batch_size, collate_fn=collate_fn)
+            split="test",
+            tokenizer=model.get_tokenizer(),
+            overwrite=True if config.overwrite == 'true' else False,
+        ),
+            batch_size=config.batch_size,
+            collate_fn=collate_fn,
+            shuffle=True
+        )
 
         logging.getLogger(__name__).info("model: train model")
         history = trainer.train(train_dl, test_dl)
