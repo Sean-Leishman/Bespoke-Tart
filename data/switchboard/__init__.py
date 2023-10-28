@@ -1,5 +1,6 @@
 import logging
 import os
+import tqdm
 
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer
@@ -108,9 +109,7 @@ class SwitchboardDataset(Dataset):
         self.logger.info(f"data ({self.split}): loading switchboard data")
 
         dialogs = []
-        for key in list(self.filenames.keys())[:100]:
-            print(key)
-
+        for key in tqdm.tqdm(self.filenames):
             dialog = extract_dialog(self.filenames[key])
             vad = extract_speaker_timings(dialog)
             # dialog = remove_words_from_dialog(dialog)
