@@ -1,0 +1,4 @@
+#!/bin/bash
+
+python bespoketart/train.py --description "set learning rate to 0.002"
+
