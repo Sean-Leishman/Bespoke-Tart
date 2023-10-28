@@ -80,16 +80,19 @@ class EdAccDataset(Dataset):
             lines = f.readlines()
 
         current_conv_id = None
+        curr_speaker = 'A'
         for line in lines:
             conv_id = line[:9]
             if current_conv_id is None or conv_id != current_conv_id:
                 current_conv_id = conv_id
                 dialogs.append([])
+                curr_speaker = 'A'
 
             # index_of_utterance = line[10:19]
             text = line[20:]
 
-            dialogs[-1].append({"text": text, "start": 0, "end": 0})
+            dialogs[-1].append({"text": text, "start": 0, "end": 0, "speaker":curr_speaker})
+            curr_speaker = 'A' if curr_speaker == 'B' else 'B'
 
         self.logger.info(
             f" data({self.split}): done loading {len(dialogs)} sentences of edacc data")
