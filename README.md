@@ -1,8 +1,5 @@
 # BEspoke taRT  
 
-## Machine Guidance
-Tested on a Debian-based system with versions as listed below. 
-
 ## General Installation 
 ### Prerequisties
 1. `conda`
@@ -53,8 +50,7 @@ For more information on the structure of the data see [here](https://github.com/
 
 
 #### HCRC MapTask 
-([HCRC Maptask](https://groups.inf.ed.ac.uk/maptask/transcripts/))
-1. Retreive files
+Retrieve files
 ```
 cd data/maptask && ./maptask.wget.sh
 ```
