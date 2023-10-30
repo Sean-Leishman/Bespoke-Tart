@@ -37,6 +37,10 @@ def collate_fn(batch):
 DATASETS = [SwitchboardDataset, EdAccDataset]
 CACHE_PATH = get_abs_path(os.path.join(".cache", "dataset"))
 
+def extract_turns_to_n(dialog, N=2, token=102):
+    idxs = (dialog == token).nonzero(as_tuple=True)[0]
+
+    return idxs[-2] if len(idxs) >= 2 else 0
 
 class TranscriptDataset(Dataset):
     def __init__(self, split="train",
@@ -82,12 +86,14 @@ class TranscriptDataset(Dataset):
         start_idx = max(0, token_idx-self.max_prior_window_size)
         end_idx = min(len(self), token_idx + self.post_window_size)
 
+        start_token_idx = extract_turns_to_n(conv['input_ids'][0][start_idx:token_idx], N=self.context_window) + start_idx
+
         dict = {'input': {}, 'output': {}}
         for k, v in conv.items():
             if k == "dialog":
                 continue
 
-            dict["input"][k] = v[0][start_idx:token_idx]
+            dict["input"][k] = v[0][start_token_idx:token_idx]
             dict["output"][k] = v[0][token_idx:end_idx]
 
         return dict
