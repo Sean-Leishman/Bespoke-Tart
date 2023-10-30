@@ -34,7 +34,7 @@ def build_parser():
     parser.add_argument('--save-path', type=str, default='trained_model/',
                         help="model weights and config options save directory")
 
-    parser.add_argument('--bert-type', type=str, default='distilbert',
+    parser.add_argument('--bert-type', type=str, default='bert',
                         help="choose which BERT version to use (bert, distilbert)")
     parser.add_argument('--bert-finetuning', type=str, default='false',
                         help='true/false if BERT should be finetuned')
@@ -56,6 +56,8 @@ def build_parser():
 
     parser.add_argument('--loss-weight', type=float, default=1.355,
                         help="for binary classification and weighting EOTs")
+    parser.add_argument('--output-window', type=int, default=5,
+                        help="number of tokens to determine label in binary classification")
 
     # Dataset
     parser.add_argument('--overwrite', type=str, default="false",
@@ -132,8 +134,9 @@ def main(config):
             config=config,
         )
     elif config.bert_type == 'bert':
-        logging.getLogger(__name__).info(f"Loaded model: bert")
-        model = Bert(bert_finetuning=True if config.bert_finetuning == 'true' else False,
+        bert_finetuning = True if config.bert_finetuning == 'true' else False
+        logging.getLogger(__name__).info(f"Loaded model: bert with finetuning: {bert_finetuning}")
+        model = Bert(bert_finetuning= bert_finetuning,
                      config=config)
     else:
         logging.getLogger(__name__).info(
