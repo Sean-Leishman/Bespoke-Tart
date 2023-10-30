@@ -113,9 +113,15 @@ class Trainer:
         progress_bar.close()
         return self.history
 
+    def get_postfix_str(self, step, f1, loss, count, tp, fp, fn, tn):
+        return (f'loss={loss / (step + 1): .4f}, f1={f1 / (step + 1): .4f}, accuracy={(tp+tn) / count: .4f} '
+        f'precision={(tp/(tp+fp)) if tp+fp != 0 else 1: .4f}, recall={tp/(tp+fn) if tp+fn != 0 else 0: .4f}')
+
     def train_epoch(self, train_dl):
         self.model.train()
         total_loss, total_count = 0,0
+        total_f1 = 0
+        tp, fp, fn, tn = 0,0,0,0
 
         progress_bar = tqdm(train_dl, desc='Training')
 
@@ -126,7 +132,7 @@ class Trainer:
             attention_mask = batch["attention_mask"].to(self.device)
             token_type_ids = batch["token_type_ids"].to(self.device)
 
-            labels = self.generate_labels(batch['output']).to(self.device)
+            labels = self.generate_labels(batch['output'], self.config.output_window).to(self.device)
 
             logits = self.model.forward(
                 input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
@@ -135,20 +141,31 @@ class Trainer:
             self.optimizer.step()
 
             total_loss += loss.item()
-            total_count += 1
+            total_count += len(labels)
 
-            progress_bar.set_postfix_str(
-                f'train_loss={total_loss/total_count: .4f}')
+            probs = self.model.get_probability(logits)
+
+            predicted_trp = (probs > 0.5).float()
+            tp += ((predicted_trp == 1) & (labels == 1)).sum().item()
+            fp += ((predicted_trp == 1) & (labels == 0)).sum().item()
+            fn += ((predicted_trp == 0) & (labels == 1)).sum().item()
+            tn += ((predicted_trp == 0) & (labels == 0)).sum().item()
+
+            f1 = f1_score(torch.flatten(labels.cpu()),
+                          torch.flatten(predicted_trp.cpu()))
+            total_f1 += f1
+
+            progress_bar.set_postfix_str(self.get_postfix_str(step, total_f1, total_loss, total_count, tp, fp, fn , tn))
 
         progress_bar.close()
         avg_loss = total_loss / len(train_dl)
 
         return avg_loss
 
-    def generate_labels(self, batch_output):
+    def generate_labels(self, batch_output, number_of_tokens=10):
         eot_id = self.model.tokenizer.convert_tokens_to_ids('[SEP]')
 
-        labels = (batch_output['input_ids'] == eot_id).any(dim=1).float()
+        labels = (batch_output['input_ids'][:,:number_of_tokens] == eot_id).any(dim=1).float()
         return labels.unsqueeze(1)
 
     def calculate_loss(self, output, labels):
@@ -157,7 +174,8 @@ class Trainer:
 
     def validate(self, test_dl):
         total_loss, total_count = 0, 0
-        total_correct, total_f1 = 0,0
+        total_f1 = 0
+        tp, fp, fn, tn = 0,0,0,0
 
         self.model.eval()
         with torch.no_grad():
@@ -168,35 +186,35 @@ class Trainer:
                 attention_mask = batch['attention_mask'].to(self.device)
                 token_type_ids = batch['token_type_ids'].to(self.device)
 
-                labels = self.generate_labels(batch['output']).to(self.device)
+                labels = self.generate_labels(batch['output'], number_of_tokens=self.config.output_window).to(self.device)
 
                 logits = self.model.forward(
                     input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
                 loss = self.calculate_loss(logits, labels)
 
                 total_loss += float(loss)
-                total_count += 1
+                total_count += len(labels)
 
                 probs = self.model.get_probability(logits)
 
                 predicted_trp = (probs > 0.5).float()
-                correct_predictions = (
-                    predicted_trp == labels).float().sum().item()
-                total_correct += correct_predictions
 
-                predicted_trp_1 = predicted_trp.sum().item()
+                tp += ((predicted_trp == 1) & (labels == 1)).sum().item()
+                fp += ((predicted_trp == 1) & (labels == 0)).sum().item()
+                fn += ((predicted_trp == 0) & (labels == 1)).sum().item()
+                tn += ((predicted_trp == 0) & (labels == 0)).sum().item()
+
                 f1 = f1_score(torch.flatten(labels.cpu()),
                               torch.flatten(predicted_trp.cpu()))
                 total_f1 += f1
-                # print(torch.flatten(labels.cpu()))
-                # print(torch.flatten(predicted_trp.cpu()))
 
                 progress_bar.set_postfix_str(
-                    f'f1={total_f1/total_count: .4f} avg_valid_loss={total_loss/total_count: .4f}, avg_valid_correct={total_correct/total_count: .4f}')
+                    self.get_postfix_str(step, total_f1, total_loss, total_count, tp, fp, fn, tn))
 
-            progress_bar.close()
+        progress_bar.close()
         self.model.train()
-        return total_loss / total_count, total_correct / total_count, total_f1/total_count
+
+        return total_loss / step, (tp+tn) / total_count, total_f1/step
 
     def save_training(self, path):
         torch.save(self.best, path)
