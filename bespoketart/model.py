@@ -82,6 +82,7 @@ class Bert(torch.nn.Module):
         self.bert = BertModel.from_pretrained(pretrained_model_name)
         self.bert.to(config.device)
         self.logger = logging.getLogger(__name__)
+        self.config = config
 
         if not bert_finetuning:
             self.logger.info('model: bert parameters frozen')
@@ -90,6 +91,7 @@ class Bert(torch.nn.Module):
 
         self.dropout = torch.nn.Dropout(p=0.1)
         self.fc1 = torch.nn.Linear(self.bert.config.hidden_size, 20)
+        self.fc2 = torch.nn.Linear(self.bert.config.hidden_size, 10)
         self.relu = torch.nn.ReLU()
 
         self.output = torch.nn.Linear(
@@ -105,9 +107,17 @@ class Bert(torch.nn.Module):
 
         # (batchsize, sequencelength, hidden state size) (128, 50, 768)
         x = bert_output[0]
-        x = torch.mean(x, dim=1) # (128, 1, 768)
-        x = self.fc1(x) # (127, 1, 20)
-        x = self.relu(x) # (128, 1, 20)
+        x1, x2 = torch.mean(x[:, :25, :].to(self.config.device), dim=1), torch.mean(x[:, 25:, :].to(self.config.device), dim=1) # 2 * (128, 25, 768)
+        x = torch.mean(x, dim=1)
+
+        # x1,x2 = self.fc1(x1), self.fc2(x2) # (127, 1, 20)
+        # x1, x2 = self.relu(x1), self.relu(x2) # (128, 1, 20)
+
+        x = self.fc1(x)
+        x = self.relu(x)
+
+        # x = torch.cat((x1, x2), dim=1)
+
 
         logits = self.output(x)
         return logits

@@ -59,3 +59,17 @@ Added other metrics to examine these properties: precision and recall
 - precision: 0.5248
 - recall: 0.5970
 - train loss: 0.6571
+
+## 2023-10-30:00-15-22 
+Using new data turn system where a context window of two turns is extracted for each index. 
+
+### Epoch 1 
+- f1: 0.5211
+- precision: 0.5570 
+- recall 0.5069
+- train loss 0.6671
+
+### Epoch 7
+- f1: 0.5107
+- precision: 0.5704
+- recall: 0.4790
