@@ -108,5 +108,9 @@ conda activate diss
 conda install ipykernel
 
 cd nb_notebooks
+conda deactivate
+conda activate base 
 jupyter notebook
+
+# Switch to correct kenrel with required packages
 ```

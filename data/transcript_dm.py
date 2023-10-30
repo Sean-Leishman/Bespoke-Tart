@@ -37,10 +37,22 @@ def collate_fn(batch):
 DATASETS = [SwitchboardDataset, EdAccDataset]
 CACHE_PATH = get_abs_path(os.path.join(".cache", "dataset"))
 
+"""
+Returns the index of the Nth token with ID `token` in `dialog` from the right 
+of the string 
+
+Parameters:
+    dialog (str): string to extract turns from 
+    N (int): Nth token indxes to be returned
+    token (int): ID of token to be searched for
+"""
+
+
 def extract_turns_to_n(dialog, N=2, token=102):
     idxs = (dialog == token).nonzero(as_tuple=True)[0]
 
-    return idxs[-2] if len(idxs) >= 2 else 0
+    return idxs[-N] if len(idxs) >= N else 0
+
 
 class TranscriptDataset(Dataset):
     def __init__(self, split="train",
@@ -86,7 +98,8 @@ class TranscriptDataset(Dataset):
         start_idx = max(0, token_idx-self.max_prior_window_size)
         end_idx = min(len(self), token_idx + self.post_window_size)
 
-        start_token_idx = extract_turns_to_n(conv['input_ids'][0][start_idx:token_idx], N=self.context_window) + start_idx
+        start_token_idx = extract_turns_to_n(
+            conv['input_ids'][0][start_idx:token_idx], N=(self.context_window+1)) + start_idx + 1
 
         dict = {'input': {}, 'output': {}}
         for k, v in conv.items():
@@ -126,7 +139,7 @@ class TranscriptDataset(Dataset):
         saved_ds = torch.load(self.get_save_load_path())
         self.dataset = saved_ds.dataset
         self.data = saved_ds.data
-        self.prefix_sum = saved_ds.prefix_sum
+        self.prefix_sum = self.generate_indexes()
 
     def save_to_disk(self):
         self.logger.info(f"data {self.split}: saving combined transcript")
@@ -135,7 +148,8 @@ class TranscriptDataset(Dataset):
     def get_dialog_idx(self, token_idx):
         dialog_idx = next(i for i, v in enumerate(
             self.prefix_sum) if v > token_idx) - 1
-        token_idx = (token_idx - self.prefix_sum[dialog_idx]) * self.window_step
+        token_idx = (
+            token_idx - self.prefix_sum[dialog_idx]) * self.window_step
 
         return dialog_idx, token_idx
 
@@ -169,7 +183,8 @@ class TranscriptDataset(Dataset):
                     if token == 102:
                         current_speaker = 'A' if current_speaker == 'B' else 'A'
 
-                    token_type_ids[0].append(0 if current_speaker == 'A' else 1)
+                    token_type_ids[0].append(
+                        0 if current_speaker == 'A' else 1)
 
                 output['token_type_ids'] = torch.tensor(token_type_ids)
                 result.append(output)
@@ -198,7 +213,7 @@ class TranscriptDataset(Dataset):
 
 if __name__ == "__main__":
     ts = TranscriptDataset(
-        tokenizer=AutoTokenizer.from_pretrained("bert-base-uncased"))
+        tokenizer=AutoTokenizer.from_pretrained("bert-base-uncased"), overwrite=True)
     ts.setup()
     dl = DataLoader(ts, batch_size=320, collate_fn=collate_fn)
 
