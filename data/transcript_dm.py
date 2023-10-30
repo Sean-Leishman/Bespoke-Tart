@@ -60,10 +60,10 @@ class TranscriptDataset(Dataset):
                  savepath=None,
                  overwrite=False,
                  load_from_cache_file=False,
-                 max_prior_window_size=50,
-                 context_window=2,
-                 window_step=10,
-                 post_window_size=10):
+                 max_prior_window_size=300,
+                 context_window=1,
+                 window_step=50,
+                 post_window_size=100):
         self.logger = logging.getLogger(__name__)
 
         self.tokenizer = tokenizer
@@ -180,8 +180,8 @@ class TranscriptDataset(Dataset):
                 token_type_ids = [[]]
                 for token in output['input_ids'][0]:
                     # Is [SEP] token self.tokenizer.encode('[SEP]') -> [101, 102, 102]
-                    if token == 102:
-                        current_speaker = 'A' if current_speaker == 'B' else 'A'
+                    if token.item() == 102:
+                        current_speaker = 'A' if current_speaker == 'B' else 'B'
 
                     token_type_ids[0].append(
                         0 if current_speaker == 'A' else 1)
