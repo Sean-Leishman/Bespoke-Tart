@@ -371,7 +371,14 @@ So this function just needs to return the turn list for a conversation
 
 
 def combine_consecutive_trps(dialogs):
-    return dialogs
+    combined_dialogs = [dialogs[0]]
+    for idx in range(1,len(dialogs)):
+        if combined_dialogs[-1]['speaker'] == dialogs[idx]['speaker']:
+            combined_dialogs[-1]['text'] += f" {dialogs[idx]['text']}"
+            combined_dialogs[-1]['end'] = dialogs[idx]['end']
+        else:
+            combined_dialogs.append(dialogs[idx])
+    return combined_dialogs
 
 
 def _remove_backchannel(backchannelA, dialog):
