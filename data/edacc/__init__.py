@@ -95,7 +95,7 @@ class EdAccDataset(Dataset):
             curr_speaker = 'A' if curr_speaker == 'B' else 'B'
 
         self.logger.info(
-            f" data({self.split}): done loading {len(dialogs)} sentences of edacc data")
+            f" data({self.split}): done loading {len(dialogs)} conversations of edacc data")
         return dialogs
 
 
