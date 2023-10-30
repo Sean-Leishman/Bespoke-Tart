@@ -99,7 +99,7 @@ class Bert(torch.nn.Module):
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None):
         bert_output = self.bert(
-            input_ids, attention_mask=attention_mask)
+            input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
         # mean_pooled = torch.mean(bert_output.last_hidden_state, dim=1)
 
