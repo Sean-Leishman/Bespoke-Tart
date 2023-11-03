@@ -133,10 +133,15 @@ class Trainer:
             attention_mask = batch["attention_mask"].to(self.device)
             token_type_ids = batch["token_type_ids"].to(self.device)
 
+            output_ids = batch["output"]["input_ids"].to(self.device)
+            output_attention = batch["output"]["attention_mask"].to(self.device)
+            output_token_types = batch["output"]["token_type_ids"].to(self.device)
+
             labels = self.generate_labels(batch['output'], self.config.output_window).to(self.device)
 
             logits = self.model.forward(
                 input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
+
             loss = self.calculate_loss(logits, labels)
             loss.backward()
             self.optimizer.step()
@@ -187,12 +192,17 @@ class Trainer:
                 attention_mask = batch['attention_mask'].to(self.device)
                 token_type_ids = batch['token_type_ids'].to(self.device)
 
-                labels = self.generate_labels(batch['output'], number_of_tokens=self.config.output_window).to(self.device)
+                output_ids = batch["output"]["input_ids"].to(self.device)
+                output_attention = batch["output"]["attention_mask"].to(self.device)
+                output_token_types = batch["output"]["token_type_ids"].to(self.device)
+
+                labels = self.generate_labels(batch['output'], self.config.output_window).to(self.device)
 
                 logits = self.model.forward(
-                    input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
-                loss = self.calculate_loss(logits, labels)
+                input_ids, input_attention_mask=attention_mask, input_token_type_ids=token_type_ids,
+                output_ids=output_ids, output_attention_mask=output_attention, output_token_type_ids=output_token_types)
 
+                loss = self.calculate_loss(logits, labels)
                 total_loss += float(loss)
                 total_count += len(labels)
 
