@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python bespoketart/train.py --description "using a transformer after BERT embedding" --learning-rate 1.003 --batch-size 64  --output-window 5 --loss-weight 5
+python bespoketart/train.py --description "using a transformer after BERT embedding. predicting tokens" --learning-rate 0.003 --batch-size 8  --output-window 5 --loss-weight 5

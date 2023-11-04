@@ -193,7 +193,6 @@ class GenerationBert(torch.nn.Module):
         src = input_embeddings[0]
         tgt = output_embeddings[0]
 
-        print(src.shape, tgt.shape)
         out = self.transformer_decoder(tgt, src)
 
 
