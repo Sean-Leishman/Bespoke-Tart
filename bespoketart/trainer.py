@@ -16,6 +16,8 @@ def get_new_filename(save_dir):
     current_time_str = now.strftime("%Y-%m-%d:%H-%M-%S")
     return os.path.join(save_dir, current_time_str)
 
+
+
 class Trainer:
     def __init__(self, model=None, criterion=None, optimizer=None, config=None,
                  load_from_checkpoint=None):
@@ -137,25 +139,37 @@ class Trainer:
             output_attention = batch["output"]["attention_mask"].to(self.device)
             output_token_types = batch["output"]["token_type_ids"].to(self.device)
 
-            labels = self.generate_labels(batch['output'], self.config.output_window).to(self.device)
+            if input_ids.shape[1] > output_ids.shape[1]:
+                padding_size = input_ids.shape[1] - output_ids.shape[1]
+                output_ids = torch.nn.functional.pad(output_ids, (0, padding_size), value=0)
+                output_attention = torch.nn.functional.pad(output_attention, (0, padding_size), value=0)
+                output_token_types = torch.nn.functional.pad(output_token_types, (0, padding_size), value=0)
+            elif input_ids.shape[1] < output_ids.shape[1]:
+                padding_size = output_ids.shape[1] - input_ids.shape[1]
+                input_ids = torch.nn.functional.pad(input_ids, (padding_size, 0), value=0)
+                attention_mask = torch.nn.functional.pad(attention_mask, (padding_size, 0), value=0)
+                token_type_ids = torch.nn.functional.pad(token_type_ids, (padding_size, 0), value=0)
+            # labels = self.generate_labels(batch['output'], self.config.output_window).to(self.device)
 
             logits = self.model.forward(
-                input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
-
-            loss = self.calculate_loss(logits, labels)
+                input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
+                output_ids=output_ids, output_attention=output_attention, output_token_type_ids=output_token_types,
+            )
+            predicted_token_ids = torch.argmax(logits, dim=2)
+            loss = self.calculate_loss(logits, output_ids)
             loss.backward()
             self.optimizer.step()
 
             total_loss += loss.item()
-            total_count += len(labels)
+            total_count += predicted_token_ids.shape[1]
 
-            probs = self.model.get_probability(logits)
+            predicted_trp = (predicted_token_ids[:,-5:] == 102).float()
+            labels = (output_ids[:,-5:] == 102).float()
 
-            predicted_trp = (probs > 0.5).float()
-            tp += ((predicted_trp == 1) & (labels == 1)).sum().item()
-            fp += ((predicted_trp == 1) & (labels == 0)).sum().item()
-            fn += ((predicted_trp == 0) & (labels == 1)).sum().item()
-            tn += ((predicted_trp == 0) & (labels == 0)).sum().item()
+            tp += ((predicted_trp == 1) & (labels == 1)).any(dim=1).sum().item()
+            fp += ((predicted_trp == 1) & (labels == 0)).any(dim=1).sum().item()
+            fn += ((predicted_trp == 0) & (labels == 1)).any(dim=1).sum().item()
+            tn += ((predicted_trp == 0) & (labels == 0)).any(dim=1).sum().item()
 
             f1 = f1_score(torch.flatten(labels.cpu()),
                           torch.flatten(predicted_trp.cpu()))
@@ -175,6 +189,8 @@ class Trainer:
         return labels.unsqueeze(1)
 
     def calculate_loss(self, output, labels):
+        labels = labels.view(-1)
+        output = output.view(-1, output.size(-1))
         loss = self.criterion(output, labels)
         return loss
 
@@ -196,24 +212,37 @@ class Trainer:
                 output_attention = batch["output"]["attention_mask"].to(self.device)
                 output_token_types = batch["output"]["token_type_ids"].to(self.device)
 
-                labels = self.generate_labels(batch['output'], self.config.output_window).to(self.device)
+                if input_ids.shape[1] > output_ids.shape[1]:
+                    padding_size = input_ids.shape[1] - output_ids.shape[1]
+                    output_ids = torch.nn.functional.pad(output_ids, (0, padding_size), value=0)
+                    output_attention = torch.nn.functional.pad(output_attention, (0, padding_size), value=0)
+                    output_token_types = torch.nn.functional.pad(output_token_types, (0, padding_size), value=0)
+                elif input_ids.shape[1] < output_ids.shape[1]:
+                    padding_size = output_ids.shape[1] - input_ids.shape[1]
+                    input_ids = torch.nn.functional.pad(input_ids, (padding_size, 0), value=0)
+                    attention_mask = torch.nn.functional.pad(attention_mask, (padding_size, 0), value=0)
+                    token_type_ids = torch.nn.functional.pad(token_type_ids, (padding_size, 0), value=0)
+                # labels = self.generate_labels(batch['output'], self.config.output_window).to(self.device)
 
                 logits = self.model.forward(
-                input_ids, input_attention_mask=attention_mask, input_token_type_ids=token_type_ids,
-                output_ids=output_ids, output_attention_mask=output_attention, output_token_type_ids=output_token_types)
+                    input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
+                    output_ids=output_ids, output_attention=output_attention, output_token_type_ids=output_token_types,
+                )
+                predicted_token_ids = torch.argmax(logits, dim=2)
+                loss = self.calculate_loss(logits, output_ids)
+                loss.backward()
+                self.optimizer.step()
 
-                loss = self.calculate_loss(logits, labels)
-                total_loss += float(loss)
-                total_count += len(labels)
+                total_loss += loss.item()
+                total_count += predicted_token_ids.shape[1]
 
-                probs = self.model.get_probability(logits)
+                predicted_trp = (predicted_token_ids[:,-5:] == 102).float()
+                labels = (output_ids[:,-5:] == 102).float()
 
-                predicted_trp = (probs > 0.5).float()
-
-                tp += ((predicted_trp == 1) & (labels == 1)).sum().item()
-                fp += ((predicted_trp == 1) & (labels == 0)).sum().item()
-                fn += ((predicted_trp == 0) & (labels == 1)).sum().item()
-                tn += ((predicted_trp == 0) & (labels == 0)).sum().item()
+                tp += ((predicted_trp == 1) & (labels == 1)).any(dim=1).sum().item()
+                fp += ((predicted_trp == 1) & (labels == 0)).any(dim=1).sum().item()
+                fn += ((predicted_trp == 0) & (labels == 1)).any(dim=1).sum().item()
+                tn += ((predicted_trp == 0) & (labels == 0)).any(dim=1).sum().item()
 
                 f1 = f1_score(torch.flatten(labels.cpu()),
                               torch.flatten(predicted_trp.cpu()))

@@ -177,20 +177,27 @@ class GenerationBert(torch.nn.Module):
         self.relu = torch.nn.ReLU()
 
         self.output = torch.nn.Linear(
-           768 , num_labels)
+           768 , self.tokenizer.vocab_size)
 
         self.output_activation = torch.nn.Sigmoid()
 
-    def forward(self, input_ids, attention_mask=None, token_type_ids=None):
-        bert_output = self.bert(
+    def forward(self, input_ids, attention_mask=None, token_type_ids=None,
+                output_ids=None, output_attention=None, output_token_type_ids=None):
+        input_embeddings = self.bert(
             input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
-        x = bert_output[0]
-        x = self.transformer_encoder(x)
+        output_embeddings = self.bert(
+            output_ids, attention_mask=output_attention, token_type_ids=output_token_type_ids
+        )
 
-        x = x[:, 0, :]
+        src = input_embeddings[0]
+        tgt = output_embeddings[0]
 
-        logits = self.output(x)
+        print(src.shape, tgt.shape)
+        out = self.transformer_decoder(tgt, src)
+
+
+        logits = self.output(out)
         return logits
 
     def get_probability(self, logits):

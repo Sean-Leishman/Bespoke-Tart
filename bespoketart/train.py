@@ -157,8 +157,9 @@ def main(config):
 
     model.to(config.device)
 
-    criterion = torch.nn.BCEWithLogitsLoss(
-        pos_weight=torch.FloatTensor([config.loss_weight]).to(config.device))
+    # criterion = torch.nn.BCEWithLogitsLoss(
+    #    pos_weight=torch.FloatTensor([config.loss_weight]).to(config.device))
+    criterion = torch.nn.CrossEntropyLoss().to(config.device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
 
     if (config.load_model == 'true'):
@@ -179,6 +180,7 @@ def main(config):
             ),
             batch_size=config.batch_size,
             collate_fn=collate_fn,
+            num_workers=8,
             shuffle=True
         )
         test_dl = DataLoader(TranscriptDataset(
@@ -190,6 +192,7 @@ def main(config):
         ),
             batch_size=config.batch_size,
             collate_fn=collate_fn,
+            num_workers=8,
             shuffle=True
         )
 
