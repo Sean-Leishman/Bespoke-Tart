@@ -35,7 +35,7 @@ def build_parser():
                         help="model weights and config options save directory")
 
     parser.add_argument('--bert-type', type=str, default='generativebert',
-                        help="choose which BERT version to use (classificationbert, generativebert, distilbert)")
+                        help="choose which BERT version to use ( bert, distilbert)")
     parser.add_argument('--bert-finetuning', type=str, default='false',
                         help='true/false if BERT should be finetuned')
     parser.add_argument('--bert-pretraining', type=str,
@@ -138,15 +138,11 @@ def main(config):
             bert_finetuning=True if config.bert_finetuning == 'true' else False,
             config=config,
         )
-    elif config.bert_type == 'classificationbert':
+    elif config.bert_type == 'bert':
         bert_finetuning = True if config.bert_finetuning == 'true' else False
         logging.getLogger(__name__).info(f"Loaded model: bert with finetuning: {bert_finetuning}")
         model = ClassificationBert(bert_finetuning= bert_finetuning,
                      config=config)
-    elif config.bert_type == 'generativebert':
-        bert_finetuning = True if config.bert_finetuning == 'true' else False
-        logging.getLogger(__name__).info(f"Loaded model: generative BERT with finetuning: {bert_finetuning}")
-        model = GenerationBert(bert_finetuning=bert_finetuning, config=config)
     else:
         logging.getLogger(__name__).info(
             f"Loaded model: invalid bert name {config.bert_type}. loaded distilbert")
@@ -159,7 +155,7 @@ def main(config):
 
     # criterion = torch.nn.BCEWithLogitsLoss(
     #    pos_weight=torch.FloatTensor([config.loss_weight]).to(config.device))
-    criterion = torch.nn.CrossEntropyLoss().to(config.device)
+    criterion = torch.nn.MSELoss().to(config.device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
 
     if (config.load_model == 'true'):
