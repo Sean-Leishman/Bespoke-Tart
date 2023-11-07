@@ -1,0 +1,1 @@
+from cbespoketart.model import ClassificationBert
