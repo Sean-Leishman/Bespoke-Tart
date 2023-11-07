@@ -127,6 +127,8 @@ class Trainer:
         tp, fp, fn, tn = 0,0,0,0
 
         progress_bar = tqdm(train_dl, desc='Training')
+        padding = torch.zeros((8,183)).to(self.config.device)
+        padding[:,:5] = 1
 
         for step, batch in enumerate(progress_bar):
             self.optimizer.zero_grad()
@@ -151,20 +153,24 @@ class Trainer:
                 token_type_ids = torch.nn.functional.pad(token_type_ids, (padding_size, 0), value=0)
             # labels = self.generate_labels(batch['output'], self.config.output_window).to(self.device)
 
-            logits = self.model.forward(
+            if padding.shape != attention_mask.shape:
+                padding = torch.zeros(attention_mask.shape).to(self.config.device)
+                padding[:,:5] = 1
+
+            probs = self.model.forward(
                 input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
                 output_ids=output_ids, output_attention=output_attention, output_token_type_ids=output_token_types,
             )
-            predicted_token_ids = torch.argmax(logits, dim=2)
-            loss = self.calculate_loss(logits, output_ids)
+            predicted_token_ids = torch.argmax(probs, dim=2)
+            loss = self.calculate_loss(probs, output_ids, padding=padding)
             loss.backward()
             self.optimizer.step()
 
             total_loss += loss.item()
             total_count += predicted_token_ids.shape[1]
 
-            predicted_trp = (predicted_token_ids[:,-5:] == 102).float()
-            labels = (output_ids[:,-5:] == 102).float()
+            predicted_trp = (predicted_token_ids[:,-self.config.output_window:] == 102).float()
+            labels = (output_ids[:,-self.config.output_window:] == 102).float()
 
             tp += ((predicted_trp == 1) & (labels == 1)).any(dim=1).sum().item()
             fp += ((predicted_trp == 1) & (labels == 0)).any(dim=1).sum().item()
@@ -188,16 +194,25 @@ class Trainer:
         labels = (batch_output['input_ids'][:,:number_of_tokens] == eot_id).any(dim=1).float()
         return labels.unsqueeze(1)
 
-    def calculate_loss(self, output, labels):
-        labels = labels.view(-1)
-        output = output.view(-1, output.size(-1))
-        loss = self.criterion(output, labels)
-        return loss
+    def calculate_loss(self, output, labels, padding=None):
+        mask = torch.ones(labels.shape).to(self.config.device)
+        if padding is not None:
+            mask = padding
+
+        self.criterion.reduction = "none"
+        loss = self.criterion(output.view(-1, output.size(-1)), labels.view(-1))
+        loss = loss.view(labels.shape)
+
+        loss *= mask
+        return loss.sum() / mask.sum()
 
     def validate(self, test_dl):
         total_loss, total_count = 0, 0
         total_f1 = 0
         tp, fp, fn, tn = 0,0,0,0
+
+        padding = torch.zeros((8,183)).to(self.config.device)
+        padding[:,:5] = 1
 
         self.model.eval()
         with torch.no_grad():
@@ -224,20 +239,23 @@ class Trainer:
                     token_type_ids = torch.nn.functional.pad(token_type_ids, (padding_size, 0), value=0)
                 # labels = self.generate_labels(batch['output'], self.config.output_window).to(self.device)
 
+                if padding.shape != attention_mask.shape:
+                    padding = torch.zeros(attention_mask.shape).to(self.config.device)
+                    padding[:, :5] = 1
+
                 logits = self.model.forward(
                     input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
                     output_ids=output_ids, output_attention=output_attention, output_token_type_ids=output_token_types,
                 )
+
                 predicted_token_ids = torch.argmax(logits, dim=2)
-                loss = self.calculate_loss(logits, output_ids)
-                loss.backward()
-                self.optimizer.step()
+                loss = self.calculate_loss(logits, output_ids, padding=padding)
 
                 total_loss += loss.item()
                 total_count += predicted_token_ids.shape[1]
 
-                predicted_trp = (predicted_token_ids[:,-5:] == 102).float()
-                labels = (output_ids[:,-5:] == 102).float()
+                predicted_trp = (predicted_token_ids[:,-self.config.output_window:] == 102).float()
+                labels = (output_ids[:,-self.config.output_window:] == 102).float()
 
                 tp += ((predicted_trp == 1) & (labels == 1)).any(dim=1).sum().item()
                 fp += ((predicted_trp == 1) & (labels == 0)).any(dim=1).sum().item()
