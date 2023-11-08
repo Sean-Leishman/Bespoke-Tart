@@ -43,16 +43,13 @@ class DistilledBert(torch.nn.Module):
         bert_output = self.bert(
             input_ids, attention_mask=attention_mask)
 
-        # mean_pooled = torch.mean(bert_output.last_hidden_state, dim=1)
 
         # (batchsize, sequencelength, hidden state size) (128, 50, 768)
         embedding = bert_output[0]
-
-        transformer_out = self.transformer(embedding)
-        x = transformer_out
+        mean_pooled = torch.mean(embedding, dim=1)
 
         # (128, 1, 20)
-        x = self.fc1(x)
+        x = self.fc1(mean_pooled)
 
         # (128, 1, 20)
         x = self.relu(x)
