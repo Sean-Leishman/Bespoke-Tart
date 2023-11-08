@@ -11,7 +11,7 @@ from datetime import datetime
 
 from data import TranscriptDataset
 from types import SimpleNamespace
-from model import GenerationBert, ClassificationBert,  DistilledBert
+from model import ClassificationBert,  DistilledBert
 from trainer import Trainer
 
 
