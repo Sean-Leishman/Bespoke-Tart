@@ -30,6 +30,8 @@ class Trainer:
 
         self.epoch = 0
 
+        self.standardise = None
+
         self.history = {
             "train_loss": [],
             "val_loss": [],
@@ -75,6 +77,8 @@ class Trainer:
         not_improving_x = 0
         progress_bar = tqdm(range(self.epoch, self.epoch +
                             self.epochs), desc='Epoch   ')
+
+        self.standardise = self.std(train_dl)
 
         for idx in progress_bar:
             avg_train_loss = self.train_epoch(train_dl)
@@ -151,10 +155,11 @@ class Trainer:
                 attention_mask = torch.nn.functional.pad(attention_mask, (padding_size, 0), value=0)
                 token_type_ids = torch.nn.functional.pad(token_type_ids, (padding_size, 0), value=0)
 
-            dist_to_eot = self.generate_output(batch["output"], 300)
             out = self.model.forward(
                 input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
             )
+
+            dist_to_eot = self.generate_output(batch["output"], 300)
             loss = self.calculate_loss(out, dist_to_eot)
             loss.backward()
             self.optimizer.step()
@@ -186,18 +191,36 @@ class Trainer:
     def generate_output(self, batch_output, number_of_tokens=10):
         eot_id = self.model.tokenizer.convert_tokens_to_ids('[SEP]')
 
-        index = (batch_output['input_ids'][:,:number_of_tokens] == eot_id).nonzero(as_tuple=True)[0]
-        return index
+        masked_idx = (batch_output['input_ids'][:,:number_of_tokens] == eot_id).float()
+        masked_idx[masked_idx == 0] = masked_idx.size(1)
+        index = masked_idx.argmin(dim=1).to(self.config.device)
+
+        if self.standardise is None:
+            return index
+
+        return self.standardise(index)
 
     def generate_labels(self, batch_output):
         eot_id = 102
 
-        labels = (batch_output == eot_id).any(dim=1).float()
+        labels = (batch_output == eot_id).any(dim=1).float().to(self.config.device)
         return labels.unsqueeze(1)
 
     def calculate_loss(self, output, labels, padding=None):
-        loss = self.criterion(output.view(-1, output.size(-1)), labels.view(-1))
+        loss = self.criterion(output.view(-1).float(), labels.view(-1).float())
         return loss
+
+    def std(self, dl):
+        mean = 0
+        std = 0
+        for batch in dl:
+            first_eot = self.generate_output(batch, number_of_tokens=300).float()
+            mean += torch.mean(first_eot)
+            std += torch.std(first_eot)
+        mean /= len(dl)
+        std /= len(dl)
+        return lambda x: (x - mean) / std
+
 
 
     def validate(self, test_dl):
@@ -230,13 +253,12 @@ class Trainer:
                     token_type_ids = torch.nn.functional.pad(token_type_ids, (padding_size, 0), value=0)
                 # labels = self.generate_labels(batch['output'], self.config.output_window).to(self.device)
 
-                dist_to_eot = self.generate_output(batch["output"], 300)
                 out = self.model.forward(
                     input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
                 )
+
+                dist_to_eot = self.generate_output(batch["output"], 300)
                 loss = self.calculate_loss(out, dist_to_eot)
-                loss.backward()
-                self.optimizer.step()
 
                 labels = self.generate_labels(batch['output']['input_ids'][:,:self.config.output_window])
 
