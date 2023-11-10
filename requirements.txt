@@ -50,7 +50,7 @@ six @ file:///tmp/build/80754af9/six_1644875935023/work
 sympy @ file:///work/ci_py311_2/sympy_1679339311852/work
 threadpoolctl @ file:///Users/ktietz/demo/mc3/conda-bld/threadpoolctl_1629802263681/work
 tokenizers @ file:///croot/tokenizers_1687191909486/work
-torch==2.2.0.dev20230920
+torch~=2.1.0
 tqdm @ file:///croot/tqdm_1679561862951/work
 transformers @ file:///croot/transformers_1693308319445/work
 triton==2.1.0
@@ -60,3 +60,15 @@ urllib3 @ file:///croot/urllib3_1686163155763/work
 xxhash @ file:///work/ci_py311/python-xxhash_1676842384694/work
 yarl @ file:///work/ci_py311/yarl_1676827604591/work
 zipp @ file:///work/ci_py311/zipp_1676822894295/work
+
+transformers~=4.32.1
+scikit-learn~=1.2.2
+data~=0.0.0
+setuptools~=68.0.0
+tqdm~=4.65.0
+lstm~=0.1
+numpy~=1.25.2
+cbespoketart~=0.1
+seqeval~=1.2.2
+torchmetrics~=1.2.0
+gbespoketart~=0.1
