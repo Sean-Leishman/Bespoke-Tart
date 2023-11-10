@@ -1,0 +1,1 @@
+from gbespoketart.model import GenerationBert
