@@ -220,14 +220,13 @@ class Trainer:
             progress_bar.set_postfix_str(self.get_postfix_str(step, 0, total_loss, total_count, 0, 0, 0 , 0))
 
 
-            avg_loss = total_loss / len(train_dl)
-            metrics = self.compute_metrics(pred_label)
-            metrics['avg_loss'] = avg_loss
+        avg_loss = total_loss / len(train_dl)
+        metrics = self.compute_metrics(pred_label)
+        metrics['avg_loss'] = avg_loss
 
         progress_bar.disable = False
         progress_bar.set_postfix_str(self.metric_output(metrics))
         progress_bar.close()
-
 
         return metrics
 
