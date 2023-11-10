@@ -194,7 +194,7 @@ class Trainer:
                 padding = torch.zeros(attention_mask.shape).to(self.config.device)
                 padding[:,:5] = 1
 
-            ioutput_ids = torch.zeros((4,0), dtype=int).to(self.config.device)
+            output_ids[output_ids == 0] = -100
             output_attention = torch.zeros(output_ids.shape).to(self.config.device)
             out = self.model.forward(
                 input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
@@ -267,6 +267,7 @@ class Trainer:
                 output_attention = batch["output"]["attention_mask"].to(self.device)
                 output_token_types = batch["output"]["token_type_ids"].to(self.device)
 
+                """
                 if input_ids.shape[1] > output_ids.shape[1]:
                     padding_size = input_ids.shape[1] - output_ids.shape[1]
                     output_ids = torch.nn.functional.pad(output_ids, (0, padding_size), value=0)
@@ -278,6 +279,7 @@ class Trainer:
                     attention_mask = torch.nn.functional.pad(attention_mask, (padding_size, 0), value=0)
                     token_type_ids = torch.nn.functional.pad(token_type_ids, (padding_size, 0), value=0)
                 # labels = self.generate_labels(batch['output'], self.config.output_window).to(self.device)
+                """
 
                 if padding.shape != attention_mask.shape:
                     padding = torch.zeros(attention_mask.shape).to(self.config.device)

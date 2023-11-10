@@ -207,7 +207,7 @@ def main(config):
 
 
 if __name__ == "__main__":
-    warnings.filterwarnings('always')
+    warnings.filterwarnings(action="ignore", category=DeprecationWarning, module="transformers")
 
     config = build_parser()
     config.device = "cuda" if torch.cuda.is_available() and (

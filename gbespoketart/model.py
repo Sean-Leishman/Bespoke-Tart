@@ -27,6 +27,8 @@ class GenerationBert(torch.nn.Module):
         self.bertgeneration = EncoderDecoderModel(encoder=self.encoder, decoder=self.decoder)
         self.bertgeneration.config.pad_token_id = self.tokenizer.pad_token_id
         self.bertgeneration.config.decoder_start_token_id = self.tokenizer.cls_token_id
+        self.bertgeneration.config.eos_token_id = self.tokenizer.sep_token_id
+        self.bertgeneration.config.vocab_size = self.bertgeneration.config.encoder.vocab_size
 
         if not bert_finetuning:
             self.logger.info('model: bert parameters frozen')
@@ -49,10 +51,8 @@ class GenerationBert(torch.nn.Module):
                 output_ids=None, output_attention=None, output_token_type_ids=None):
 
         out = self.bertgeneration(input_ids=input_ids,
-                                  decoder_input_ids=output_ids,
-                                  decoder_attention_mask=output_attention,
-                                    use_cache=False,
-                                  attention_mask=attention_mask
+                                  labels=output_ids,
+                                  attention_mask=attention_mask,
         )
 
         return out
