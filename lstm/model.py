@@ -48,4 +48,3 @@ class LSTMBase(torch.nn.Module):
         hidden = hidden.detach()
         cell = cell.detach()
         return hidden,cell
-

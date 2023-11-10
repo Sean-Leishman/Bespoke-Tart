@@ -35,7 +35,7 @@ def collate_fn(batch):
 
 
 DATASETS = [SwitchboardDataset, EdAccDataset]
-CACHE_PATH = get_abs_path(os.path.join(".cache", "dataset"))
+CACHE_PATH = get_abs_path(".cache")
 
 """
 Returns the index of the Nth token with ID `token` in `dialog` from the right 
@@ -72,7 +72,7 @@ class TranscriptDataset(Dataset):
         self.split = split
 
         if savepath is None:
-            savepath = CACHE_PATH
+            savepath = os.path.join(CACHE_PATH, self.tokenizer.__str__()[:self.tokenizer.__str__().index("(")])
         self.savepath = savepath
 
         self.overwrite = overwrite
@@ -112,7 +112,7 @@ class TranscriptDataset(Dataset):
         return dict
 
     def get_save_load_path(self):
-        save_load_dir = get_abs_path(os.path.dirname(self.savepath))
+        save_load_dir = get_abs_path(self.savepath)
 
         if not os.path.exists(save_load_dir):
             os.mkdir(save_load_dir)
