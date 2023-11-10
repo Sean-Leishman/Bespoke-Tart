@@ -1,3 +1,6 @@
 #!/bin/bash
 
-python gbespoketart/train.py --description "using a transformer after BERT embedding. predicting tokens" --learning-rate 0.003 --batch-size 8  --output-window 5 --loss-weight 5
+# shellcheck disable=SC1101
+python gbespoketart/train.py --description "removed padding from target to decoder" \
+--learning-rate 0.0002 --batch-size 6  --output-window 5 --bert-pretraining "bert-base-uncased" \
+--bert-finetuning "true"
