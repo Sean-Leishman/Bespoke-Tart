@@ -12,7 +12,7 @@ from datetime import datetime
 from data import TranscriptDataset
 from types import SimpleNamespace
 from model import ClassificationBert,  DistilledBert
-from trainer import Trainer
+from trainer import Trainer, get_abs_path
 
 
 
@@ -121,7 +121,7 @@ def main(config):
     logging.getLogger(__name__).info("model: initialising model")
 
     if config.load_model == 'true':
-        load_path = config.load_path
+        load_path = get_abs_path(config.load_path)
         logging.getLogger(__name__).info(
             f"model: loading model from {load_path}")
 

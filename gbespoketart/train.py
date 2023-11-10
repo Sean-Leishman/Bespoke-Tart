@@ -11,8 +11,8 @@ from datetime import datetime
 
 from data import TranscriptDataset
 from types import SimpleNamespace
-from model import GenerationBert,  DistilledBert
-from trainer import Trainer
+from model import GenerationBert
+from trainer import Trainer, get_abs_path
 
 
 
@@ -121,7 +121,7 @@ def main(config):
     logging.getLogger(__name__).info("model: initialising model")
 
     if config.load_model == 'true':
-        load_path = config.load_path
+        load_path = get_abs_path(config.load_path)
         logging.getLogger(__name__).info(
             f"model: loading model from {load_path}")
 
@@ -132,20 +132,14 @@ def main(config):
 
         logging.getLogger(__name__).info(f"Loaded config: {config}")
 
-    if config.bert_type == 'distilbert':
-        logging.getLogger(__name__).info(f"Loaded model: distilbert")
-        model = DistilledBert(
-            bert_finetuning=True if config.bert_finetuning == 'true' else False,
-            config=config,
-        )
-    elif config.bert_type == 'bert':
+    if config.bert_type == 'bert':
         bert_finetuning = True if config.bert_finetuning == 'true' else False
         logging.getLogger(__name__).info(f"Loaded model: generative BERT with finetuning: {bert_finetuning}")
-        model = GenerationBert(bert_finetuning=bert_finetuning, config=config)
+        model = GenerationBert(pretrained_model_name=config.bert_pretraining, bert_finetuning=bert_finetuning, config=config)
     else:
         logging.getLogger(__name__).info(
             f"Loaded model: invalid bert name {config.bert_type}. loaded distilbert")
-        model = DistilledBert(
+        model = GenerationBert(
             bert_finetuning=True if config.bert_finetuning == 'true' else False,
             config=config,
         )
