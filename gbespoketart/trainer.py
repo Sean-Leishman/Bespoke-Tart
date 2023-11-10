@@ -82,8 +82,11 @@ class Trainer:
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.epoch = checkpoint['epoch']
 
-    def train(self, train_dl, test_dl):
+    def train(self, train_dl, test_dl, scheduler=None):
         best_loss = float('Inf')
+
+        if scheduler is not None:
+            self.scheduler = scheduler
 
         # For early stopping, number of iterations without loss improvement
         not_improving_x = 0
@@ -208,6 +211,8 @@ class Trainer:
                 loss = self.calculate_loss(out.logits, output_ids)
             loss.backward()
             self.optimizer.step()
+            if self.scheduler is not None:
+                self.scheduler.step()
 
             total_loss += loss.item()
             total_count += predicted_token_ids.shape[1]

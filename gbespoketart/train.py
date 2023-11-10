@@ -14,6 +14,9 @@ from types import SimpleNamespace
 from model import GenerationBert
 from trainer import Trainer, get_abs_path
 
+from transformers import AdamW
+from transformers.optimization import get_linear_schedule_with_warmup
+
 
 
 def build_logger():
@@ -149,7 +152,9 @@ def main(config):
     # criterion = torch.nn.BCEWithLogitsLoss(
     #    pos_weight=torch.FloatTensor([config.loss_weight]).to(config.device))
     criterion = torch.nn.CrossEntropyLoss().to(config.device)
+    optimizer = AdamW(model.parameters())
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
+
 
     if (config.load_model == 'true'):
         trainer = Trainer(model=model, criterion=criterion,
@@ -186,7 +191,13 @@ def main(config):
         )
 
         logging.getLogger(__name__).info("model: train model")
-        history = trainer.train(train_dl, test_dl)
+
+        scheduler = get_linear_schedule_with_warmup(
+            optimizer, num_warmup_steps=0,
+            num_training_steps=config.epochs * len(train_dl),
+        )
+
+        history = trainer.train(train_dl, test_dl, scheduler=scheduler)
     else:
         test_dl = DataLoader(TranscriptDataset(
             "test", model.get_tokenizer(),
