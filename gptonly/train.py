@@ -194,7 +194,7 @@ def main(config):
         )
 
         logging.getLogger(__name__).info("model: train model")
-        history = trainer.train(train_dl, test_dl)
+        history = trainer.train(train_dl, test_dl, scheduler=scheduler)
     else:
         test_dl = DataLoader(TranscriptDataset(
             "test", model.get_tokenizer(),

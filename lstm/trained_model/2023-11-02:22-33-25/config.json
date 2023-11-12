@@ -1,0 +1,1 @@
+{"cuda": "true", "epoch_size": 10, "batch_size": 128, "learning_rate": 0.002, "early_stop": 5, "weight_decay": 0.01, "save_path": "trained_model/", "overwrite": "false", "loss_weight": 1.355, "output_window": 5, "context_window": 2, "max_prior_window": 300, "device": "cuda"}

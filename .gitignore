@@ -8,7 +8,7 @@ data/edacc/data
 data/switchboard/splits/data
 data/switchboard/switchboard
 model/
-**/trained_model/
-gbespoketart/gbespoketart.egg-info/
-cbespoketart/cbespoketart.egg-info/
+*.egg-info/
 build/
+*.pt
+data/.cache/

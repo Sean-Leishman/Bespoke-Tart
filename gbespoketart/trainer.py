@@ -13,14 +13,17 @@ from sklearn.metrics import f1_score
 from seqeval.metrics import classification_report, f1_score, accuracy_score
 from torchmetrics.text import BLEUScore
 from torchmetrics.classification import BinaryF1Score, BinaryAccuracy, BinaryRecall
+import evaluate
+
+
 def get_abs_path(filepath):
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), filepath)
+
 
 def get_new_filename(save_dir):
     now = datetime.now()
     current_time_str = now.strftime("%Y-%m-%d:%H-%M-%S")
     return os.path.join(save_dir, current_time_str)
-
 
 
 class Trainer:
@@ -31,18 +34,17 @@ class Trainer:
         self.criterion = criterion
         self.optimizer = optimizer
         self.config = config
-        self.epochs = config.epoch_size
+        self.epochs = config.epochs
         self.device = torch.device(
             config.device if config is not None else "cpu")
 
         self.epoch = 0
 
-        self.history = {
-            "train_loss": [],
-            "val_loss": [],
-            "val_correct": [],
-            "val_f1":[]
-        }
+        self.train_history = {}
+        self.test_history = {}
+
+        self.train_interval = 1000
+        self.test_interval = 100
 
         self.best = {
             'epoch': 0,
@@ -67,12 +69,11 @@ class Trainer:
             self.load_from_checkpoint()
 
         self.metrics = {
-            'bleu': BLEUScore(),
+            'rouge': evaluate.load("rouge"),
             'acc': BinaryAccuracy().to(self.config.device),
             'f1': BinaryF1Score().to(self.config.device),
             'recall': BinaryRecall().to(self.config.device),
         }
-
 
     def load_from_checkpoint(self):
         checkpoint = torch.load(self.load_model_file)
@@ -91,7 +92,7 @@ class Trainer:
         # For early stopping, number of iterations without loss improvement
         not_improving_x = 0
         progress_bar = tqdm(range(self.epoch, self.epoch +
-                            self.epochs), desc='Epoch   ')
+                                  self.epochs), desc='Epoch   ')
 
         for idx in progress_bar:
             train_metrics = self.train_epoch(train_dl)
@@ -100,13 +101,18 @@ class Trainer:
             # self.logger.info(
             #    f'train_loss= {avg_train_loss: .4f}, avg_valid_loss= {avg_valid_loss: .4f}, avg_valid_correct={avg_valid_correct: .4f}')
 
-            self.history["train_loss"].append(train_metrics['avg_loss'])
-            self.history["val_loss"].append(test_metrics['avg_loss'])
-            self.history["val_correct"].append(test_metrics['eot_acc'])
-            self.history["val_f1"].append(test_metrics['eot_f1'])
+            for key in train_metrics:
+                if key not in self.train_history:
+                    self.train_history[key] = []
+                self.train_history[key].extend(train_metrics[key])
+            for key in test_metrics:
+                if key not in self.test_history:
+                    self.test_history[key] = []
+                self.test_history[key].extend(test_metrics[key])
+
             self.save_history(self.save_path)
 
-            avg_valid_loss = test_metrics['avg_loss']
+            avg_valid_loss = np.mean(test_metrics['avg_loss'])
 
             if avg_valid_loss < best_loss:
                 not_improving_x = 0
@@ -128,45 +134,72 @@ class Trainer:
                 if not_improving_x >= self.config.early_stop and self.config.early_stop > 0:
                     self.logger.info("train: early stop")
                     progress_bar.close()
-                    return self.history
+                    return self.train_history
 
         progress_bar.close()
-        return self.history
+        return self.train_history
 
     def get_postfix_str(self, step, f1, loss, count, tp, fp, fn, tn):
-        return (f'loss={loss / (step + 1): .4f}, f1={f1 / (step + 1): .4f}, accuracy={(tp+tn) / count: .4f} '
-        f'precision={(tp/(tp+fp)) if tp+fp != 0 else 1: .4f}, recall={tp/(tp+fn) if tp+fn != 0 else 0: .4f}, '
-                f'bAcc={0.5 * (tp/(tp+fn) + tn/(fp+tn)) if tp+fn != 0 and fp+tn!=0 else 0: .4f}')
+        return (f'loss={loss / (step + 1): .4f}, f1={f1 / (step + 1): .4f}, accuracy={(tp + tn) / count: .4f} '
+                f'precision={(tp / (tp + fp)) if tp + fp != 0 else 1: .4f}, recall={tp / (tp + fn) if tp + fn != 0 else 0: .4f}, '
+                f'bAcc={0.5 * (tp / (tp + fn) + tn / (fp + tn)) if tp + fn != 0 and fp + tn != 0 else 0: .4f}')
 
     def metric_output(self, metrics):
-        return (f"loss={metrics['avg_loss']: .4f}, f1={metrics['eot_f1']: .4f}, acc={metrics['eot_acc']: .4f}, "
-                f"recall={metrics['eot_recall']: .4f}, bleu={metrics['mean_bleu']: .4f}")
-    def compute_metrics(self, p):
-        # SEP Token within output window
-        true_predictions = [(prediction_batch[:,:self.config.output_window] == 101).any(dim=1) for prediction_batch, _  in p]
-        true_labels = [(label_batch[:,:self.config.output_window] == 101).any(dim=1) for _, label_batch  in p]
+        output = ""
+        if 'avg_loss' in metrics.keys():
+            output += f"loss={metrics['avg_loss'][-1] :.4f} "
+        if 'eot_f1' in metrics.keys():
+            output += f"f1={metrics['eot_f1'][-1] :.4f} "
+        if 'eot_acc' in metrics.keys():
+            output += f"acc={metrics['eot_acc'][-1] :.4f} "
+        if 'recall' in metrics.keys():
+            output += f"loss={metrics['eot_recall'][-1] :.4f} "
+        if 'rouge_mean' in metrics.keys():
+            output += f"rouge2={metrics['rouge_mean'][-1] :.4f} "
+        if 'lr' in metrics.keys():
+            output += f"lr={metrics['lr'][-1] :.4f}"
 
-        # bleu = np.mean([np.mean([self.metrics['bleu'](self.model.tokenizer.decode(p), self.model.tokenizer.decode(l)) for (p, l) in
-          # zip(prediction, label)]) for prediction, label in p])
-        results = {
-            'eot_acc':torch.mean(torch.tensor([self.metrics['acc'].to(self.config.device)(p,l) for p,l in zip(true_predictions, true_labels)])),
-            'eot_f1':torch.mean(torch.tensor([self.metrics['f1'].to(self.config.device)(p,l) for p,l in zip(true_predictions, true_labels)])),
-            'eot_recall':torch.mean(torch.tensor([self.metrics['recall'].to(self.config.device)(p,l) for p,l in zip(true_predictions, true_labels)])),
-            'mean_bleu':0.0
-        }
-        return results
+        return output
+
+    def compute_metrics(self, p, metrics={}):
+        # SEP Token within output window
+        id = self.model.tokenizer.convert_tokens_to_ids('[SEP]')
+        true_predictions = [(prediction_batch[:, :self.config.output_window] == id).any(dim=1) for prediction_batch, _
+                            in p]
+        true_labels = [(label_batch[:, :self.config.output_window] == id).any(dim=1) for _, label_batch in p]
+
+        # Rouge
+        pred_strs = [self.model.tokenizer.batch_decode(pred) for pred, _ in p]
+        label_strs = [self.model.tokenizer.batch_decode(torch.where(label == -100, 0, label)) for _, label in p]
+
+        rouge_out = [
+            self.metrics['rouge'].compute(predictions=pred_str, references=label_str, rouge_types=["rouge2"])['rouge2']
+            for
+            pred_str, label_str in zip(pred_strs, label_strs)]
+
+        metrics['eot_acc'].extend([torch.mean(torch.tensor(
+            [self.metrics['acc'].to(self.config.device)(p, l) for p, l in zip(true_predictions, true_labels)])).item()]),
+        metrics['eot_f1'].extend([torch.mean(torch.tensor(
+            [self.metrics['f1'].to(self.config.device)(p, l) for p, l in zip(true_predictions, true_labels)])).item()]),
+        metrics['eot_recall'].extend([torch.mean(torch.tensor([self.metrics['recall'].to(self.config.device)(p, l) for p, l in
+                                                         zip(true_predictions, true_labels)])).item()]),
+        metrics['rouge_mean'].extend([np.mean(rouge_out)])
+        return metrics
 
     def train_epoch(self, train_dl):
         self.model.train()
-        total_loss, total_count = 0,0
-        total_f1 = 0
-        tp, fp, fn, tn = 0,0,0,0
-
+        total_loss, total_count = 0, 0
         progress_bar = tqdm(train_dl, desc='Training', unit="batch")
-        padding = torch.zeros((8,183)).to(self.config.device)
-        padding[:,:5] = 1
 
         pred_label = []
+        metrics = {
+            'eot_f1': [],
+            'eot_acc': [],
+            'eot_recall':[],
+            'rouge_mean':[],
+            'avg_loss': [],
+            'lr':[],
+        }
 
         for step, batch in enumerate(progress_bar):
             self.optimizer.zero_grad()
@@ -175,67 +208,53 @@ class Trainer:
             attention_mask = batch["attention_mask"].to(self.device)
             token_type_ids = batch["token_type_ids"].to(self.device)
 
-            output_ids = batch["output"]["input_ids"].to(self.device)
-            output_attention = batch["output"]["attention_mask"].to(self.device)
-            output_token_types = batch["output"]["token_type_ids"].to(self.device)
-
-            """
-            if input_ids.shape[1] > output_ids.shape[1]:
-                padding_size = input_ids.shape[1] - output_ids.shape[1]
-                output_ids = torch.nn.functional.pad(output_ids, (0, padding_size), value=0)
-                output_attention = torch.nn.functional.pad(output_attention, (0, padding_size), value=0)
-                output_token_types = torch.nn.functional.pad(output_token_types, (0, padding_size), value=0)
-            elif input_ids.shape[1] < output_ids.shape[1]:
-                padding_size = output_ids.shape[1] - input_ids.shape[1]
-                input_ids = torch.nn.functional.pad(input_ids, (padding_size, 0), value=0)
-                attention_mask = torch.nn.functional.pad(attention_mask, (padding_size, 0), value=0)
-                token_type_ids = torch.nn.functional.pad(token_type_ids, (padding_size, 0), value=0)
-            # labels = self.generate_labels(batch['output'], self.config.output_window).to(self.device)
-            """
-
-            if padding.shape != attention_mask.shape:
-                padding = torch.zeros(attention_mask.shape).to(self.config.device)
-                padding[:,:5] = 1
-
-            output_ids[output_ids == 0] = -100
-            output_attention = torch.zeros(output_ids.shape).to(self.config.device)
+            labels = self.generate_labels(input_ids, mask=attention_mask)
             out = self.model.forward(
                 input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
-                output_ids=output_ids, output_attention=output_attention, output_token_type_ids=output_token_types,
-            )
-            predicted_token_ids = torch.argmax(out.logits, dim=2)
-            pred_label.append((predicted_token_ids * output_attention, output_ids * output_attention))
+                output_ids=labels, output_attention=attention_mask)
 
             loss = out.loss
             if loss is None:
-                loss = self.calculate_loss(out.logits, output_ids)
+                loss = self.calculate_loss(out.logits, labels)
             loss.backward()
             self.optimizer.step()
             if self.scheduler is not None:
                 self.scheduler.step()
-
             total_loss += loss.item()
-            total_count += predicted_token_ids.shape[1]
 
-            progress_bar.set_postfix_str(self.get_postfix_str(step, 0, total_loss, total_count, 0, 0, 0 , 0))
+            avg_loss = round(total_loss / (step + 1), 4)
+            progress_bar.set_postfix_str(f"loss={avg_loss}")
 
+            if step == 10 or step % self.train_interval == 0 and step != 0:
+                self.model.eval()
+                sample_out = self.model.generate(input_ids=input_ids[:, :50], mask=attention_mask[:, :50])
+
+                for i, sample in enumerate(sample_out):
+                    print(f"{i}: \n"
+                          f"\tInput:  {self.model.tokenizer.decode(input_ids[i, :100])}\n"
+                          f"\tTarget: {self.model.tokenizer.decode(input_ids[i, 100:])}\n"
+                          f"\tOutput: {self.model.tokenizer.decode(sample[100:])}\n")
+
+                pred_label.append((sample_out[:, 100:], input_ids[:, 100:]))
+                metrics['avg_loss'].append(avg_loss)
+                metrics['lr'].extend(self.scheduler.get_last_lr())
+                self.model.train()
 
         avg_loss = total_loss / len(train_dl)
-        metrics = self.compute_metrics(pred_label)
-        metrics['avg_loss'] = avg_loss
+        metrics = self.compute_metrics(pred_label, metrics)
+        metrics['avg_loss'].append(avg_loss)
 
         progress_bar.disable = False
         progress_bar.set_postfix_str(self.metric_output(metrics))
         progress_bar.close()
 
-
         return metrics
 
-    def generate_labels(self, batch_output, number_of_tokens=10):
-        eot_id = self.model.tokenizer.convert_tokens_to_ids('[SEP]')
+    def generate_labels(self, input_ids, mask=None, pad_id=-100):
+        labels = input_ids.clone()
+        labels[torch.logical_not(mask)] = pad_id
 
-        labels = (batch_output['input_ids'][:,:number_of_tokens] == eot_id).any(dim=1).float()
-        return labels.unsqueeze(1)
+        return labels
 
     def calculate_loss(self, output, labels, padding=None):
         mask = torch.ones(labels.shape).to(self.config.device)
@@ -251,65 +270,55 @@ class Trainer:
 
     def validate(self, test_dl):
         total_loss, total_count = 0, 0
-        total_f1 = 0
-        tp, fp, fn, tn = 0,0,0,0
-
-        padding = torch.zeros((8,183)).to(self.config.device)
-        padding[:,:5] = 1
 
         pred_label = []
+        metrics = {
+            'eot_f1': [],
+            'eot_acc': [],
+            'eot_recall':[],
+            'rouge_mean':[],
+            'avg_loss': [],
+            'lr':[],
+        }
 
         self.model.eval()
         with torch.no_grad():
             progress_bar = tqdm(test_dl, desc='Validation')
 
             for step, batch in enumerate(progress_bar):
-                input_ids = batch['input_ids'].to(self.device)
-                attention_mask = batch['attention_mask'].to(self.device)
-                token_type_ids = batch['token_type_ids'].to(self.device)
+                input_ids = batch["input_ids"].to(self.device)
+                attention_mask = batch["attention_mask"].to(self.device)
+                token_type_ids = batch["token_type_ids"].to(self.device)
 
-                output_ids = batch["output"]["input_ids"].to(self.device)
-                output_attention = batch["output"]["attention_mask"].to(self.device)
-                output_token_types = batch["output"]["token_type_ids"].to(self.device)
-
-                """
-                if input_ids.shape[1] > output_ids.shape[1]:
-                    padding_size = input_ids.shape[1] - output_ids.shape[1]
-                    output_ids = torch.nn.functional.pad(output_ids, (0, padding_size), value=0)
-                    output_attention = torch.nn.functional.pad(output_attention, (0, padding_size), value=0)
-                    output_token_types = torch.nn.functional.pad(output_token_types, (0, padding_size), value=0)
-                elif input_ids.shape[1] < output_ids.shape[1]:
-                    padding_size = output_ids.shape[1] - input_ids.shape[1]
-                    input_ids = torch.nn.functional.pad(input_ids, (padding_size, 0), value=0)
-                    attention_mask = torch.nn.functional.pad(attention_mask, (padding_size, 0), value=0)
-                    token_type_ids = torch.nn.functional.pad(token_type_ids, (padding_size, 0), value=0)
-                # labels = self.generate_labels(batch['output'], self.config.output_window).to(self.device)
-                """
-
-                if padding.shape != attention_mask.shape:
-                    padding = torch.zeros(attention_mask.shape).to(self.config.device)
-                    padding[:, :5] = 1
-
+                labels = self.generate_labels(input_ids, mask=attention_mask)
                 out = self.model.forward(
                     input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
-                    output_ids=output_ids, output_attention=output_attention, output_token_type_ids=output_token_types,
-                )
-
-                predicted_token_ids = torch.argmax(out.logits, dim=2)
-                pred_label.append((predicted_token_ids*output_attention, output_ids*output_attention))
+                    output_ids=labels)
 
                 loss = out.loss
                 if loss is None:
-                    loss = self.calculate_loss(out.logits, output_ids, padding=None)
+                    loss = self.calculate_loss(out.logits, labels)
 
                 total_loss += loss.item()
-                total_count += predicted_token_ids.shape[1]
+                avg_loss = round(total_loss / (step + 1), 4)
+                progress_bar.set_postfix_str(f"loss={avg_loss}")
 
-                progress_bar.set_postfix_str(
-                    self.get_postfix_str(step, 0, total_loss, total_count, 0, 0, 0, 0))
+                if step == 10 or step % self.test_interval == 0 and step != 0:
+                    self.model.eval()
+                    sample_out = self.model.generate(input_ids=input_ids[:, :50])
 
-            metrics = self.compute_metrics(pred_label)
-            metrics['avg_loss'] = total_loss / total_count
+                    for i, sample in enumerate(sample_out):
+                        print(f"{i}: \n"
+                              f"\tInput:  {self.model.tokenizer.decode(input_ids[i, :100])}\n"
+                              f"\tTarget: {self.model.tokenizer.decode(input_ids[i, 100:])}\n"
+                              f"\tOutput: {self.model.tokenizer.decode(sample[100:])}\n")
+
+                    pred_label.append((sample_out[:, 100:], input_ids[:, 100:]))
+                    metrics['lr'].extend(self.scheduler.get_last_lr())
+                    metrics['avg_loss'].append(avg_loss)
+
+            metrics = self.compute_metrics(pred_label, metrics)
+            metrics['avg_loss'].append(total_loss / len(test_dl))
 
             progress_bar.disable = False
             progress_bar.set_postfix_str(self.metric_output(metrics))
@@ -323,10 +332,11 @@ class Trainer:
         torch.save(self.best, path)
 
     def save_history(self, path):
-        np.save(os.path.join(path, "train_loss"), self.history["train_loss"])
-        np.save(os.path.join(path, "val_loss"), self.history["val_loss"])
-        np.save(os.path.join(path, "val_f1"), self.history["val_f1"])
-        np.save(os.path.join(path, "val_correct"), self.history["val_correct"])
+        self.logger.info("trainer: save history")
+        for key in self.train_history:
+            np.save(os.path.join(path, f"train_{key}"), self.train_history[key])
+        for key in self.test_history:
+            np.save(os.path.join(path, f"test_{key}"), self.test_history[key])
 
     def print_dialogue(self, input_ids, prediction, output, label):
         output = f"Input: {self.model.tokenizer.decode(input_ids)}\n"

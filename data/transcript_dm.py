@@ -34,7 +34,7 @@ def collate_fn(batch):
     return batched_data
 
 
-DATASETS = [SwitchboardDataset, EdAccDataset]
+DATASETS = [SwitchboardDataset]
 CACHE_PATH = get_abs_path(".cache")
 
 """
@@ -63,7 +63,11 @@ class TranscriptDataset(Dataset):
                  max_prior_window_size=300,
                  context_window=1,
                  window_step=50,
-                 post_window_size=100):
+                 post_window_size=100,
+                 padding=False,
+                 left_padding=False,
+                 dev_mode=False,
+    ):
         self.logger = logging.getLogger(__name__)
 
         self.tokenizer = tokenizer
@@ -71,8 +75,12 @@ class TranscriptDataset(Dataset):
 
         self.split = split
 
+        self.padding = padding
+        self.padding_side = "left" if left_padding else "right"
+
         if savepath is None:
-            savepath = os.path.join(CACHE_PATH, self.tokenizer.__str__()[:self.tokenizer.__str__().index("(")])
+            dirname = self.tokenizer.__str__()[:self.tokenizer.__str__().index("(")] + ("NoPad" if not self.padding else f"Pad{self.padding_side}")
+            savepath = os.path.join(CACHE_PATH, dirname)
         self.savepath = savepath
 
         self.overwrite = overwrite
@@ -83,9 +91,15 @@ class TranscriptDataset(Dataset):
         self.post_window_size = post_window_size
         self.window_step = window_step
 
+        self.dev_mode = False
+
+
         self.prepare_data()
 
     def __len__(self):
+        if self.dev_mode:
+            return 100
+
         return self.prefix_sum[-1]
 
     def __getitem__(self, idx):
@@ -98,8 +112,10 @@ class TranscriptDataset(Dataset):
         start_idx = max(0, token_idx-self.max_prior_window_size)
         end_idx = min(len(self), token_idx + self.post_window_size)
 
-        start_token_idx = extract_turns_to_n(
-            conv['input_ids'][0][start_idx:token_idx], N=(self.context_window+1)) + start_idx + 1
+        start_token_idx = start_idx
+        if self.context_window == -1:
+            start_token_idx = extract_turns_to_n(
+                conv['input_ids'][0][start_idx:token_idx], N=(self.context_window+1)) + start_idx + 1
 
         dict = {'input': {}, 'output': {}}
         for k, v in conv.items():
@@ -153,47 +169,48 @@ class TranscriptDataset(Dataset):
 
         return dialog_idx, token_idx
 
-    def tokenize(self, padding=False):
-        self.logger.info(f"data ({self.split}): tokenizing edacc data")
+    def tokenize(self):
+        self.logger.info(f"data ({self.split}): tokenizing data")
 
-        if padding:
-            self.logger.info(f"data ({self.split}): padding edacc data")
-            tokens = self.tokenizer(self.dialogs,
-                                    padding="max length",
-                                    truncation=True,
-                                    max_length=1024,
-                                    return_tensors="pt")
+        result = []
+        for dataset in self.dataset:
+            output = {}
+            dialog = [dialog['text'] for dialog in dataset]
 
-        else:
-            result = []
-            for dataset in self.dataset:
-                output = {}
-                dialog = [dialog['text'] for dialog in dataset]
+            output['dialog'] = "[SEP]".join(dialog)
+            tokens = self.tokenize_sentence(output['dialog'])
 
-                output['dialog'] = "[SEP]".join(dialog)
-                tokens = self.tokenize_sentence(output['dialog'])
+            output['input_ids'] = tokens['input_ids']
+            output['attention_mask'] = tokens['attention_mask']
 
-                output['input_ids'] = tokens['input_ids']
-                output['attention_mask'] = tokens['attention_mask']
+            current_speaker = dataset[0]['speaker']
+            token_type_ids = [[]]
+            for token in output['input_ids'][0]:
+                # Is [SEP] token self.tokenizer.encode('[SEP]') -> [101, 102, 102]
+                if token.item() == 102:
+                    current_speaker = 'A' if current_speaker == 'B' else 'B'
 
-                current_speaker = dataset[0]['speaker']
-                token_type_ids = [[]]
-                for token in output['input_ids'][0]:
-                    # Is [SEP] token self.tokenizer.encode('[SEP]') -> [101, 102, 102]
-                    if token.item() == 102:
-                        current_speaker = 'A' if current_speaker == 'B' else 'B'
+                token_type_ids[0].append(
+                    0 if current_speaker == 'A' else 1)
 
-                    token_type_ids[0].append(
-                        0 if current_speaker == 'A' else 1)
-
-                output['token_type_ids'] = torch.tensor(token_type_ids)
-                result.append(output)
+            output['token_type_ids'] = torch.tensor(token_type_ids)
+            result.append(output)
 
         self.logger.info(
             f"data ({self.split}): done tokenizing edacc data with keys: {result[0].keys}")
         return result
 
     def tokenize_sentence(self, dialog):
+        if self.padding:
+            tokens = self.tokenizer(
+                dialog,
+                padding="max_length",
+                max_length=self.max_prior_window_size,
+                truncation=True,
+                return_tensors="pt"
+            )
+            return tokens
+
         tokens = self.tokenizer(
             dialog,
             padding="do_not_pad",

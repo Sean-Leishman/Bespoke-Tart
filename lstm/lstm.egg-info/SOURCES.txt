@@ -1,0 +1,9 @@
+setup.py
+../lstm/__init__.py
+../lstm/model.py
+../lstm/train.py
+../lstm/trainer.py
+lstm.egg-info/PKG-INFO
+lstm.egg-info/SOURCES.txt
+lstm.egg-info/dependency_links.txt
+lstm.egg-info/top_level.txt

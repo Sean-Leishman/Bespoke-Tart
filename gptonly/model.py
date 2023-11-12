@@ -1,5 +1,6 @@
 import torch
 import logging
+import random
 
 from argparse import ArgumentParser
 
@@ -22,45 +23,55 @@ class GPT(torch.nn.Module):
 
         config = GPT2Config.from_pretrained(pretrained_model_name)
         self.gpt = GPT2LMHeadModel.from_pretrained(pretrained_model_name, config=config)
+        self.init_tokenizer()
 
         if not bert_finetuning:
             self.logger.info('model: bert parameters frozen')
             for param in self.gpt.parameters():
                 param.requires_grad = False
 
-        self.softmax = torch.nn.Softmax(dim=2)
-        self.relu = torch.nn.ReLU()
-
-        self.output = torch.nn.Linear(
-           768 , self.tokenizer.vocab_size)
-
-        self.output_activation = torch.nn.Sigmoid()
-
     def forward(self, input_ids, attention_mask=None, token_type_ids=None,
                 output_ids=None, output_attention=None, output_token_type_ids=None):
 
         out = self.gpt(
             input_ids,
+            labels=output_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
         )
         return out
 
-    def get_probability(self, logits):
-        return self.output_activation(logits)
+    def generate(self, input_ids=None, mask=None):
+        if input_ids is None:
+            sample_output = self.gpt.generate(
+                bos_token_id=random.randint(1,30000),
+                do_sample=True,
+                top_k=50,
+                max_length=100,
+                top_p=0.95,
+                num_return_sequences=1,
+                pad_token_id=self.tokenizer.pad_token_id
+            )
+        else:
+            sample_output = self.gpt.generate(
+                input_ids=input_ids,
+                do_sample=True,
+                top_k=50,
+                max_length=300,
+                top_p=0.95,
+                num_return_sequences=1,
+                pad_token_id=self.tokenizer.pad_token_id
+            )
+        return sample_output
 
-    # out: Seq2SeqLMOutput
-    def output_word(self, out):
-        return self.tokenizer.decode(torch.argmax(self.softmax(out.logits))[1])
-    def init_tokenizer(self, tokenizer):
-        num_added_token = tokenizer.add_special_tokens(
-            {'additional_special_tokens': ['[EOT]']}
+    def init_tokenizer(self):
+        num_added_token = self.tokenizer.add_special_tokens(
+            {'additional_special_tokens': ['[SEP]']}
         )
+        self.gpt.resize_token_embeddings(len(self.tokenizer))
 
         self.logger.info(
-            f"model: add {tokenizer.all_special_tokens} token/s")
-
-        return tokenizer
+            f"model: add {self.tokenizer.all_special_tokens} token/s")
 
     def get_tokenizer(self):
         return self.tokenizer
