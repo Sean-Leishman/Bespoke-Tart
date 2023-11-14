@@ -117,7 +117,7 @@ def collate_fn(batch):
             attention_masks, batch_first=True, padding_value=0)
         token_type_ids_padded = torch.nn.utils.rnn.pad_sequence(
             token_type_ids, batch_first=True, padding_value=0)
-
+        # """
         if key == 'input':
             batched_data = {'input_ids': input_ids_padded,
                             'attention_mask': attention_masks_padded,
@@ -205,7 +205,8 @@ def main(config):
 
         logging.getLogger(__name__).info("model: train model")
 
-        scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.5, total_iters=config.epochs * len(train_dl))
+        # scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.5, total_iters=config.epochs * len(train_dl))
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.90)
 
         history = trainer.train(train_dl, test_dl, scheduler=scheduler)
     else:
