@@ -11,7 +11,7 @@ from datetime import datetime
 
 from data import TranscriptDataset
 from types import SimpleNamespace
-from model import GenerationBert
+from model import EncoderDecoderBert
 from trainer import Trainer, get_abs_path
 
 from transformers import AdamW
@@ -25,7 +25,7 @@ def build_logger():
     logging.info("Logger built")
 
 
-def build_parser():
+def build_parser(parse_args=True):
     parser = argparse.ArgumentParser(
         description="Bespoke Tart model used to predict turn-taking from linguistic features")
     parser.add_argument('--cuda', type=str, default='true',
@@ -45,7 +45,7 @@ def build_parser():
                         default='bert-base-uncased',
                         help="name of pretrained BERT model")
 
-    parser.add_argument('--epoch-size', type=int, default=10)
+    parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--batch-size', type=int, default=128)
     parser.add_argument('--learning-rate', type=float, default=0.002)
     parser.add_argument('--weight-decay', type=float, default=0.01)
@@ -70,7 +70,12 @@ def build_parser():
     # Dataset
     parser.add_argument('--overwrite', type=str, default="false",
                         help="overwrite and regenerate dataset")
-    return parser.parse_args()
+    parser.add_argument('--dev-mode', action='store_true',
+                        help="decrease dataset size to test post-processing steps")
+    if parse_args:
+        return parser.parse_args()
+    else:
+        return parser
 
 
 
@@ -93,6 +98,18 @@ def get_latest_model(path):
 def collate_fn(batch):
     batched_data = {'input': None, 'output': None}
     for key in ['input', 'output']:
+        """
+        input_ids = [item[key]['input_ids'].flip(dims=[0]) for item in batch]
+        attention_masks = [item[key]['attention_mask'].flip(dims=[0]) for item in batch]
+        token_type_ids = [item[key]['token_type_ids'].flip(dims=[0]) for item in batch]
+
+        input_ids_padded = torch.nn.utils.rnn.pad_sequence(
+            input_ids, batch_first=True, padding_value=0).flip(dims=[1])
+        attention_masks_padded = torch.nn.utils.rnn.pad_sequence(
+            attention_masks, batch_first=True, padding_value=0).flip(dims=[1])
+        token_type_ids_padded = torch.nn.utils.rnn.pad_sequence(
+            token_type_ids, batch_first=True, padding_value=0).flip(dims=[1])
+        """
         input_ids = [item[key]['input_ids'] for item in batch]
         attention_masks = [item[key]['attention_mask'] for item in batch]
         token_type_ids = [item[key]['token_type_ids'] for item in batch]
@@ -103,7 +120,7 @@ def collate_fn(batch):
             attention_masks, batch_first=True, padding_value=0)
         token_type_ids_padded = torch.nn.utils.rnn.pad_sequence(
             token_type_ids, batch_first=True, padding_value=0)
-
+        # """
         if key == 'input':
             batched_data = {'input_ids': input_ids_padded,
                             'attention_mask': attention_masks_padded,
@@ -138,24 +155,21 @@ def main(config):
     if config.bert_type == 'bert':
         bert_finetuning = True if config.bert_finetuning == 'true' else False
         logging.getLogger(__name__).info(f"Loaded model: generative BERT with finetuning: {bert_finetuning}")
-        model = GenerationBert(pretrained_model_name=config.bert_pretraining, bert_finetuning=bert_finetuning, config=config)
+        model = EncoderDecoderBert(pretrained_model_name=config.bert_pretraining, bert_finetuning=bert_finetuning, config=config)
     else:
         logging.getLogger(__name__).info(
             f"Loaded model: invalid bert name {config.bert_type}. loaded distilbert")
-        model = GenerationBert(
+        model = EncoderDecoderBert(
             bert_finetuning=True if config.bert_finetuning == 'true' else False,
             config=config,
         )
 
     model.to(config.device)
 
-    # criterion = torch.nn.BCEWithLogitsLoss(
-    #    pos_weight=torch.FloatTensor([config.loss_weight]).to(config.device))
     criterion = torch.nn.CrossEntropyLoss().to(config.device)
-    optimizer = AdamW(model.parameters())
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
 
-
+    #
     if (config.load_model == 'true'):
         trainer = Trainer(model=model, criterion=criterion,
                           optimizer=optimizer, config=config,
@@ -170,7 +184,8 @@ def main(config):
                 tokenizer=model.get_tokenizer(),
                 overwrite=True if config.overwrite == 'true' else False,
                 max_prior_window_size=config.max_prior_window,
-                context_window=config.context_window
+                context_window=config.context_window,
+                dev_mode=config.dev_mode
             ),
             batch_size=config.batch_size,
             collate_fn=collate_fn,
@@ -182,7 +197,8 @@ def main(config):
             tokenizer=model.get_tokenizer(),
             overwrite=True if config.overwrite == 'true' else False,
             max_prior_window_size=config.max_prior_window,
-            context_window=config.context_window
+            context_window=config.context_window,
+            dev_mode=config.dev_mode
         ),
             batch_size=config.batch_size,
             collate_fn=collate_fn,
@@ -192,17 +208,16 @@ def main(config):
 
         logging.getLogger(__name__).info("model: train model")
 
-        scheduler = get_linear_schedule_with_warmup(
-            optimizer, num_warmup_steps=0,
-            num_training_steps=config.epochs * len(train_dl),
-        )
+        # scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.5, total_iters=config.epochs * len(train_dl))
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.90)
 
         history = trainer.train(train_dl, test_dl, scheduler=scheduler)
     else:
         test_dl = DataLoader(TranscriptDataset(
             "test", model.get_tokenizer(),
             max_prior_window_size=config.max_prior_window,
-            context_window=config.context_window
+            context_window=config.context_window,
+            dev_mode=config.dev_mode
         ),
             batch_size=config.batch_size, collate_fn=collate_fn)
 
