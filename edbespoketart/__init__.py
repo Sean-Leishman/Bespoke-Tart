@@ -1,1 +1,1 @@
-from gbespoketart.model import GenerationBert
+from edbespoketart.model import EncoderDecoderModel

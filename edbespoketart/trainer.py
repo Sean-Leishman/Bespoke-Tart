@@ -231,7 +231,7 @@ class Trainer:
                     print(f"{i}: \n"
                           f"\tInput:  {self.model.tokenizer.decode(input_ids[i, :100])}\n"
                           f"\tTarget: {self.model.tokenizer.decode(input_ids[i, 100:])}\n"
-                          f"\tOutput: {self.model.tokenizer.decode(sample[100:])}\n")
+                          f"\tOutput: {self.model.tokenizer.decode(sample)}\n")
 
                 pred_label.append((sample_out[:, 100:], input_ids[:, 100:]))
                 metrics['avg_loss'].append(avg_loss)
@@ -292,14 +292,15 @@ class Trainer:
                 attention_mask = batch["attention_mask"].to(self.device)
                 token_type_ids = batch["token_type_ids"].to(self.device)
 
-                labels = self.generate_labels(input_ids, mask=attention_mask)
+                label_ids = batch["output"]["input_ids"].to(self.device)
+
                 out = self.model.forward(
                     input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids,
-                    output_ids=labels)
+                    output_ids=label_ids, output_attention=attention_mask)
 
                 loss = out.loss
                 if loss is None:
-                    loss = self.calculate_loss(out.logits, labels)
+                    loss = self.calculate_loss(out.logits, label_ids)
 
                 total_loss += loss.item()
                 avg_loss = round(total_loss / (step + 1), 4)

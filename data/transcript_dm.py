@@ -91,14 +91,14 @@ class TranscriptDataset(Dataset):
         self.post_window_size = post_window_size
         self.window_step = window_step
 
-        self.dev_mode = False
+        self.dev_mode = dev_mode
 
 
         self.prepare_data()
 
     def __len__(self):
         if self.dev_mode:
-            return 100
+            return 1000
 
         return self.prefix_sum[-1]
 
