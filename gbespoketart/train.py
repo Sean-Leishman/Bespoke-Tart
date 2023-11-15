@@ -25,7 +25,7 @@ def build_logger():
     logging.info("Logger built")
 
 
-def build_parser():
+def build_parser(parse_args=True):
     parser = argparse.ArgumentParser(
         description="Bespoke Tart model used to predict turn-taking from linguistic features")
     parser.add_argument('--cuda', type=str, default='true',
@@ -72,7 +72,10 @@ def build_parser():
                         help="overwrite and regenerate dataset")
     parser.add_argument('--dev-mode', action='store_true',
                         help="decrease dataset size to test post-processing steps")
-    return parser.parse_args()
+    if parse_args:
+        return parser.parse_args()
+    else:
+        return parser
 
 
 

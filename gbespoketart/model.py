@@ -23,13 +23,11 @@ class GenerationBert(torch.nn.Module):
         self.bertlmhead = BertLMHeadModel.from_pretrained(pretrained_model_name_or_path="bert-base-uncased",config=config)
 
         self.generation_config=GenerationConfig(
-            eos_token_id=self.tokenizer.sep_token_id,
             pad_token_id=self.tokenizer.pad_token_id,
             bos_token_id=self.tokenizer.cls_token_id,
             max_length= 200,
             num_return_sequences= 1,
             do_sample=True,
-
         )
 
         if not bert_finetuning:
