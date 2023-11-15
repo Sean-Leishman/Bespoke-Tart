@@ -216,12 +216,13 @@ class Trainer:
                 loss = self.calculate_loss(out.logits, labels)
             loss.backward()
             self.optimizer.step()
-            if self.scheduler:
-                self.scheduler.step()
 
             total_loss += loss.item()
             avg_loss = round(total_loss / (step + 1), 4)
             progress_bar.set_postfix_str(f"loss={avg_loss}")
+
+        if self.scheduler:
+            self.scheduler.step()
 
         avg_loss = total_loss / len(train_dl)
         metrics = self.compute_metrics(pred_label)

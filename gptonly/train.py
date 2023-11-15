@@ -152,7 +152,7 @@ def main(config):
     # criterion = torch.nn.BCEWithLogitsLoss(
     #    pos_weight=torch.FloatTensor([config.loss_weight]).to(config.device))
     criterion = torch.nn.CrossEntropyLoss().to(config.device)
-    optimizer = AdamW(model.parameters())
+    optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
 
     if (config.load_model == 'true'):
         trainer = Trainer(model=model, criterion=criterion,
@@ -188,10 +188,7 @@ def main(config):
             shuffle=True
         )
 
-        scheduler = get_linear_schedule_with_warmup(
-            optimizer, num_warmup_steps=0,
-            num_training_steps=config.epochs * len(train_dl),
-        )
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.90)
 
         logging.getLogger(__name__).info("model: train model")
         history = trainer.train(train_dl, test_dl, scheduler=scheduler)
