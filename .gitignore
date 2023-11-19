@@ -12,3 +12,4 @@ model/
 build/
 *.pt
 data/.cache/
+**/wandb/
