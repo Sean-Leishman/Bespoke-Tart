@@ -1,1 +1,2 @@
 from data.transcript_dm import TranscriptDataset
+from data.generation_dm import GenerationDM
