@@ -41,10 +41,11 @@ class GPT(torch.nn.Module):
         )
         return out
 
-    def generate(self, input_ids=None, mask=None):
+    def generate(self, input_ids=None, speaker_ids=None, mask=None, output_scores=False, n_sequences=1):
         if input_ids is None:
             sample_output = self.gpt.generate(
                 bos_token_id=random.randint(1,30000),
+                token_type_ids=speaker_ids,
                 do_sample=True,
                 top_k=50,
                 max_length=100,
@@ -55,20 +56,27 @@ class GPT(torch.nn.Module):
         else:
             sample_output = self.gpt.generate(
                 input_ids=input_ids,
+                token_type_ids=speaker_ids,
                 do_sample=True,
                 top_k=50,
                 max_length=300,
                 top_p=0.95,
-                num_return_sequences=1,
-                pad_token_id=self.tokenizer.pad_token_id
+                num_return_sequences=n_sequences,
+                pad_token_id=self.tokenizer.pad_token_id,
+                output_scores=True,
+                return_dict_in_generate=True,
             )
         return sample_output
 
     def init_tokenizer(self):
         num_added_token = self.tokenizer.add_special_tokens(
-            {'additional_special_tokens': ['[SEP]']}
+            {
+                "eos_token": "[SEP]",
+                "pad_token": "<|endoftext|>"
+            }
         )
         self.gpt.resize_token_embeddings(len(self.tokenizer))
+        # self.tokenizer.sep_token_id = self.tokenizer.convert_tokens_to_ids('[SEP]')
 
         self.logger.info(
             f"model: add {self.tokenizer.all_special_tokens} token/s")
@@ -82,3 +90,24 @@ class GPT(torch.nn.Module):
 
         #self.tra May be useful to separate params
 
+    def from_string(self, string):
+        output = {}
+        output['dialog'] = "[SEP]".join(string)
+        tokens = self.tokenizer(output['dialog'], return_tensors="pt", truncation=True)
+
+        output['input_ids'] = tokens['input_ids'].to(self.config.device)
+
+        current_speaker = 'A'
+        token_type_ids = [[]]
+
+        SEP_token = self.tokenizer.convert_tokens_to_ids("[SEP]")
+        for token in output['input_ids'][0]:
+            # Is [SEP] token self.tokenizer.encode('[SEP]') -> [101, 102, 102]
+            if token.item() == SEP_token:
+                current_speaker = 'A' if current_speaker == 'B' else 'B'
+
+            token_type_ids[0].append(
+                0 if current_speaker == 'A' else 1)
+
+        output['token_type_ids'] = torch.tensor(token_type_ids).to(self.config.device)
+        return output
