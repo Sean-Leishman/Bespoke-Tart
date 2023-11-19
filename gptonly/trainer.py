@@ -7,6 +7,7 @@ from datetime import datetime
 import logging
 import time
 
+import wandb
 from tqdm import tqdm
 from sklearn.metrics import f1_score
 
@@ -14,14 +15,18 @@ from seqeval.metrics import classification_report, f1_score, accuracy_score
 from torchmetrics.text import BLEUScore
 from torchmetrics.classification import BinaryF1Score, BinaryAccuracy, BinaryRecall
 import evaluate
+
+from gptonly.utils import plot_trp
+
+
 def get_abs_path(filepath):
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), filepath)
+
 
 def get_new_filename(save_dir):
     now = datetime.now()
     current_time_str = now.strftime("%Y-%m-%d:%H-%M-%S")
     return os.path.join(save_dir, current_time_str)
-
 
 
 class Trainer:
@@ -72,6 +77,7 @@ class Trainer:
             'recall': BinaryRecall().to(self.config.device),
         }
 
+        self.global_step = 0
 
     def load_from_checkpoint(self):
         checkpoint = torch.load(self.load_model_file)
@@ -79,6 +85,7 @@ class Trainer:
             f"model: loading parameters for model {checkpoint.keys()}")
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        self.model.tokenizer.from_pretrained(os.path.join(os.path.dirname(self.load_model_file), "tokenizer"))
         self.epoch = checkpoint['epoch']
 
     def train(self, train_dl, test_dl, scheduler):
@@ -87,13 +94,26 @@ class Trainer:
         # For early stopping, number of iterations without loss improvement
         not_improving_x = 0
         progress_bar = tqdm(range(self.epoch, self.epoch +
-                            self.epochs), desc='Epoch   ')
+                                  self.epochs), desc='Epoch   ')
 
         self.scheduler = scheduler
+
+        test_metrics = self.validate(test_dl)
+        self.trp_example_plots()
+        self.text_generation_examples()
+        for key in test_metrics:
+            if key not in self.test_history:
+                self.test_history[key] = []
+            self.test_history[key].append(test_metrics[key])
+
+        self.save_history(self.save_path)
 
         for idx in progress_bar:
             train_metrics = self.train_epoch(train_dl)
             test_metrics = self.validate(test_dl)
+
+            self.trp_example_plots()
+            self.text_generation_examples()
 
             for key in train_metrics:
                 if key not in self.train_history:
@@ -110,6 +130,9 @@ class Trainer:
 
             if avg_valid_loss < best_loss:
                 not_improving_x = 0
+
+                self.trp_example_plots()
+                self.text_generation_examples()
 
                 best_loss = avg_valid_loss
                 self.best['model_state_dict'] = self.model.state_dict()
@@ -134,10 +157,9 @@ class Trainer:
         return self.train_history
 
     def get_postfix_str(self, step, f1, loss, count, tp, fp, fn, tn):
-        return (f'loss={loss / (step + 1): .4f}, f1={f1 / (step + 1): .4f}, accuracy={(tp+tn) / count: .4f} '
-        f'precision={(tp/(tp+fp)) if tp+fp != 0 else 1: .4f}, recall={tp/(tp+fn) if tp+fn != 0 else 0: .4f}, '
-                f'bAcc={0.5 * (tp/(tp+fn) + tn/(fp+tn)) if tp+fn != 0 and fp+tn!=0 else 0: .4f}')
-
+        return (f'loss={loss / (step + 1): .4f}, f1={f1 / (step + 1): .4f}, accuracy={(tp + tn) / count: .4f} '
+                f'precision={(tp / (tp + fp)) if tp + fp != 0 else 1: .4f}, recall={tp / (tp + fn) if tp + fn != 0 else 0: .4f}, '
+                f'bAcc={0.5 * (tp / (tp + fn) + tn / (fp + tn)) if tp + fn != 0 and fp + tn != 0 else 0: .4f}')
 
     def metric_output(self, metrics):
         output = ""
@@ -157,33 +179,39 @@ class Trainer:
     def compute_metrics(self, p):
         # SEP Token within output window
         id = self.model.tokenizer.convert_tokens_to_ids('[SEP]')
-        true_predictions = [(prediction_batch[:,:self.config.output_window] == id).any(dim=1) for prediction_batch, _  in p]
-        true_labels = [(label_batch[:,:self.config.output_window] == id).any(dim=1) for _, label_batch  in p]
+        true_predictions = [(prediction_batch[:, :self.config.output_window] == id).any(dim=1) for prediction_batch, _
+                            in p]
+        true_labels = [(label_batch[:, :self.config.output_window] == id).any(dim=1) for _, label_batch in p]
 
         # Rouge
         pred_strs = [self.model.tokenizer.batch_decode(pred) for pred, _ in p]
-        label_strs = [self.model.tokenizer.batch_decode(torch.where(label==-100, 0, label)) for _, label in p]
+        label_strs = [self.model.tokenizer.batch_decode(torch.where(label == -100, 0, label)) for _, label in p]
 
-        rouge_out = [self.metrics['rouge'].compute(predictions=pred_str, references=label_str, rouge_types=["rouge2"])['rouge2'] for
+        rouge_out = [
+            self.metrics['rouge'].compute(predictions=pred_str, references=label_str, rouge_types=["rouge2"])['rouge2']
+            for
             pred_str, label_str in zip(pred_strs, label_strs)]
 
         results = {
-            'eot_acc':torch.mean(torch.tensor([self.metrics['acc'].to(self.config.device)(p,l) for p,l in zip(true_predictions, true_labels)])).item(),
-            'eot_f1':torch.mean(torch.tensor([self.metrics['f1'].to(self.config.device)(p,l) for p,l in zip(true_predictions, true_labels)])).item(),
-            'eot_recall':torch.mean(torch.tensor([self.metrics['recall'].to(self.config.device)(p,l) for p,l in zip(true_predictions, true_labels)])).item(),
-            'rouge_mean':np.mean(rouge_out),
+            'eot_acc': torch.mean(torch.tensor([self.metrics['acc'].to(self.config.device)(p, l) for p, l in
+                                                zip(true_predictions, true_labels)])).item(),
+            'eot_f1': torch.mean(torch.tensor([self.metrics['f1'].to(self.config.device)(p, l) for p, l in
+                                               zip(true_predictions, true_labels)])).item(),
+            'eot_recall': torch.mean(torch.tensor([self.metrics['recall'].to(self.config.device)(p, l) for p, l in
+                                                   zip(true_predictions, true_labels)])).item(),
+            'rouge_mean': np.mean(rouge_out),
         }
         return results
 
     def train_epoch(self, train_dl):
         self.model.train()
-        total_loss, total_count = 0,0
+        total_loss, total_count = 0, 0
         total_f1 = 0
-        tp, fp, fn, tn = 0,0,0,0
+        tp, fp, fn, tn = 0, 0, 0, 0
 
         progress_bar = tqdm(train_dl, desc='Training', unit="batch")
-        padding = torch.zeros((8,183)).to(self.config.device)
-        padding[:,:5] = 1
+        padding = torch.zeros((8, 183)).to(self.config.device)
+        padding[:, :5] = 1
 
         pred_label = []
 
@@ -200,15 +228,7 @@ class Trainer:
 
             if step == 10 or step % self.train_interval == 0 and step != 0:
                 self.model.eval()
-                sample_out = self.model.generate(input_ids=input_ids[:, :-50])
 
-                for i, sample in enumerate(sample_out):
-                    print(f"{i}: \n"
-                          f"\tInput:  {self.model.tokenizer.decode(input_ids[i, -100:-50])}\n"
-                          f"\tTarget: {self.model.tokenizer.decode(input_ids[i, -50:])}\n"
-                          f"\tOutput: {self.model.tokenizer.decode(sample[-50:])}\n")
-
-                pred_label.append((sample_out[:,-50:], input_ids[:,-50:]))
                 self.model.train()
 
             loss = out.loss
@@ -217,9 +237,15 @@ class Trainer:
             loss.backward()
             self.optimizer.step()
 
+            if step % self.config.log_interval == 0:
+                wandb.log({"loss": loss,
+                           "global_step": self.global_step})
+
             total_loss += loss.item()
             avg_loss = round(total_loss / (step + 1), 4)
             progress_bar.set_postfix_str(f"loss={avg_loss}")
+
+            self.global_step += 1
 
         if self.scheduler:
             self.scheduler.step()
@@ -227,6 +253,9 @@ class Trainer:
         avg_loss = total_loss / len(train_dl)
         metrics = self.compute_metrics(pred_label)
         metrics['avg_loss'] = avg_loss
+
+        wandb.log({"train_loss": avg_loss,
+                   "global_step": self.global_step})
 
         progress_bar.disable = False
         progress_bar.set_postfix_str(self.metric_output(metrics))
@@ -257,10 +286,10 @@ class Trainer:
     def validate(self, test_dl):
         total_loss, total_count = 0, 0
         total_f1 = 0
-        tp, fp, fn, tn = 0,0,0,0
+        tp, fp, fn, tn = 0, 0, 0, 0
 
-        padding = torch.zeros((8,183)).to(self.config.device)
-        padding[:,:5] = 1
+        padding = torch.zeros((8, 183)).to(self.config.device)
+        padding[:, :5] = 1
 
         pred_label = []
 
@@ -277,18 +306,6 @@ class Trainer:
                 out = self.model.forward(
                     input_ids, output_ids=labels, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
-                if step == 10 or step % self.val_interval == 0 and step != 0:
-                    last_idx = attention_mask.size(1) - 1 - attention_mask.flip(dims=[1]).argmax(dim=1)
-                    sample_out = self.model.generate(input_ids=input_ids[:, :50])
-
-                    for i, sample in enumerate(sample_out):
-                        print(f"{i}: \n"
-                          f"\tInput:  {self.model.tokenizer.decode(input_ids[i, -100:-50])}\n"
-                          f"\tTarget: {self.model.tokenizer.decode(input_ids[i, -50:])}\n"
-                          f"\tOutput: {self.model.tokenizer.decode(sample[-50:])}\n")
-
-                    pred_label.append((sample_out[:,-50:], input_ids[:,-50:]))
-
                 loss = out.loss
                 if loss is None:
                     loss = self.calculate_loss(out.logits, input_ids, padding=None)
@@ -301,6 +318,9 @@ class Trainer:
             metrics = self.compute_metrics(pred_label)
             metrics['avg_loss'] = total_loss / len(test_dl)
 
+            wandb.log({"val_loss": avg_loss,
+                       "global_step": self.global_step})
+
             progress_bar.disable = False
             progress_bar.set_postfix_str(self.metric_output(metrics))
 
@@ -310,6 +330,7 @@ class Trainer:
         return metrics
 
     def save_training(self, path):
+        self.model.tokenizer.save_pretrained(os.path.join(os.path.dirname(path), "tokenizer"))
         torch.save(self.best, path)
 
     def save_history(self, path):
@@ -324,4 +345,69 @@ class Trainer:
         output += f"Output: {self.model.tokenizer.decode(output['input_ids'])}\n"
         output += f"Prediction: {prediction}, Label: {label}"
 
-        print(output)
+    @torch.no_grad
+    def generate_from_string(self, t):
+        out = self.model(t["input_ids"], token_type_ids=t["token_type_ids"])
+        out["probs"] = out["logits"].softmax(dim=-1)
+        out["trp_probs"] = (out["probs"])[..., self.model.tokenizer.eos_token_id]
+        out["tokens"] = self.model.tokenizer.convert_ids_to_tokens(t["input_ids"][0])
+        return out
+
+    def trp_example_plots(self, name="TRP/example"):
+        turn_list = [
+            ["yesterday we met in the park", "okay when will you meet again", "tomorrow"],
+            [
+                "Hello there I basically had the worst day of my life",
+                "Oh no, what happened?",
+                "Do you want the long or the short story?",
+            ],
+        ]
+
+        figs = []
+        global_steps = []
+        for b in range(len(turn_list)):
+            out = self.model.from_string(turn_list[b])
+            out = self.generate_from_string(out)
+            print(out["tokens"][0])
+            fig, _ = plot_trp(
+                trp=out["trp_probs"][0].cpu(),
+                text=out["tokens"],
+                eos_token='[SEP]'
+            )
+            figs.append(fig)
+            global_steps.append(self.global_step)
+
+        wandb.log({"graphs": [wandb.Image(im) for im in figs], "global_step": self.global_step})
+
+    def text_generation_examples(self, name="Generate/example"):
+        turn_list = [
+            ["yesterday we met in the park", "okay when will you meet again", "tomorrow"],
+            [
+                "Hello there I basically had the worst day of my life",
+                "Oh no, what happened?",
+                "Do you want the long or the short story?",
+            ],
+        ]
+
+        inp = self.model.from_string(turn_list[-1])
+        out = self.model.generate(input_ids=inp['input_ids'], speaker_ids=inp["token_type_ids"], output_scores=True, n_sequences=10)
+
+        G = {"tokens": self.model.tokenizer.batch_decode(out['sequences'][:, len(inp['input_ids'][0]):])}
+        """
+        for i, g in enumerate(out["sequences"][1:]):
+            if g not in G["tokens"]:
+                G["tokens"].append(g)
+                # G["probs"].append(out["probs"][i].cpu())
+        """
+
+        table = wandb.Table(
+            columns=["context", "sample"],
+            data=[
+                [turn_list[-1][-1], toks]
+                for toks in G["tokens"]
+            ]
+        )
+        wandb.log({
+            f"{name}": table,
+            "global_step": self.global_step,
+        })
