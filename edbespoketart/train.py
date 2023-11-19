@@ -72,10 +72,9 @@ def build_parser(parse_args=True):
                         help="overwrite and regenerate dataset")
     parser.add_argument('--dev-mode', action='store_true',
                         help="decrease dataset size to test post-processing steps")
-    if parse_args:
-        return parser.parse_args()
-    else:
-        return parser
+
+    return parser.parse_args()
+
 
 
 

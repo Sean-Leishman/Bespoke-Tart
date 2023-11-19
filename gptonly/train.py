@@ -9,7 +9,7 @@ import warnings
 
 from datetime import datetime
 
-from data import TranscriptDataset
+from data import TranscriptDataset, GenerationDM
 from types import SimpleNamespace
 
 from gptonly import GPT
@@ -18,6 +18,7 @@ from trainer import Trainer, get_abs_path
 from transformers import AdamW
 from transformers.optimization import get_linear_schedule_with_warmup
 
+import wandb
 
 def build_logger():
     logging.basicConfig(format='%(asctime)s - %(message)s',
@@ -67,9 +68,16 @@ def build_parser():
     parser.add_argument('--max-prior-window', type=int, default=300,
                         help="number of tokens to be used as a max in the prior context")
 
+    # Wandb
+    parser.add_argument('--log_interval', type=int, default=100,
+                        help="frequency with which to report logs to wandb")
+
     # Dataset
     parser.add_argument('--overwrite', type=str, default="false",
                         help="overwrite and regenerate dataset")
+    parser.add_argument('--dev-mode', action='store_true',
+                        help="decrease dataset size to test post-processing steps")
+
     return parser.parse_args()
 
 
@@ -123,6 +131,9 @@ def main(config):
     # )
     logging.getLogger(__name__).info("model: initialising model")
 
+    if not config.dev_mode:
+        wandb.init(config=config)
+
     if config.load_model == 'true':
         load_path = get_abs_path(config.load_path)
         logging.getLogger(__name__).info(
@@ -163,27 +174,29 @@ def main(config):
                           optimizer=optimizer, config=config)
 
     if config.evaluate == 'false':
-        train_dl = DataLoader(TranscriptDataset(
+        train_ds = GenerationDM(
                 split="train",
                 tokenizer=model.get_tokenizer(),
                 overwrite=True if config.overwrite == 'true' else False,
-                max_prior_window_size=config.max_prior_window,
-                context_window=config.context_window
-            ),
+            )
+        train_ds.prepare_data()
+        train_dl = DataLoader(
+            train_ds,
             batch_size=config.batch_size,
-            collate_fn=collate_fn,
+            collate_fn=train_ds.collate_fn,
             num_workers=8,
             shuffle=True
         )
-        test_dl = DataLoader(TranscriptDataset(
+        test_ds = GenerationDM(
             split="test",
             tokenizer=model.get_tokenizer(),
             overwrite=True if config.overwrite == 'true' else False,
-            max_prior_window_size=config.max_prior_window,
-            context_window=config.context_window
-        ),
+        )
+        test_ds.prepare_data()
+        test_dl = DataLoader(
+            test_ds,
             batch_size=config.batch_size,
-            collate_fn=collate_fn,
+            collate_fn=test_ds.collate_fn,
             num_workers=8,
             shuffle=True
         )
@@ -193,12 +206,19 @@ def main(config):
         logging.getLogger(__name__).info("model: train model")
         history = trainer.train(train_dl, test_dl, scheduler=scheduler)
     else:
-        test_dl = DataLoader(TranscriptDataset(
-            "test", model.get_tokenizer(),
-            max_prior_window_size=config.max_prior_window,
-            context_window=config.context_window
-        ),
-            batch_size=config.batch_size, collate_fn=collate_fn)
+        test_ds = GenerationDM(
+            split="test",
+            tokenizer=model.get_tokenizer(),
+            overwrite=True if config.overwrite == 'true' else False,
+        )
+        test_ds.prepare_data()
+        test_dl = DataLoader(
+            test_ds,
+            batch_size=config.batch_size,
+            collate_fn=test_ds.collate_fn,
+            num_workers=8,
+            shuffle=True
+        )
 
         logging.getLogger(__name__).info("model: evaluate model")
         if not config.load_model:
