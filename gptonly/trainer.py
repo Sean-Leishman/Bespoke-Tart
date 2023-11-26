@@ -224,16 +224,9 @@ class Trainer:
 
             labels = self.generate_labels(input_ids, mask=attention_mask)
             out = self.model.forward(
-                input_ids, output_ids=labels, attention_mask=attention_mask, token_type_ids=token_type_ids)
-
-            if step == 10 or step % self.train_interval == 0 and step != 0:
-                self.model.eval()
-
-                self.model.train()
+                input_ids, labels=labels, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
             loss = out.loss
-            if loss is None:
-                loss = self.calculate_loss(out.logits, labels)
             loss.backward()
             self.optimizer.step()
 
@@ -304,12 +297,9 @@ class Trainer:
 
                 labels = self.generate_labels(input_ids, mask=attention_mask)
                 out = self.model.forward(
-                    input_ids, output_ids=labels, attention_mask=attention_mask, token_type_ids=token_type_ids)
+                    input_ids, labels=labels, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
                 loss = out.loss
-                if loss is None:
-                    loss = self.calculate_loss(out.logits, input_ids, padding=None)
-
                 total_loss += loss.item()
 
                 avg_loss = round(total_loss / (step + 1), 4)
@@ -318,6 +308,7 @@ class Trainer:
             metrics = self.compute_metrics(pred_label)
             metrics['avg_loss'] = total_loss / len(test_dl)
 
+            self.generate_on_validation_set(input_ids, mask=attention_mask, speaker_ids=token_type_ids)
             wandb.log({"val_loss": avg_loss,
                        "global_step": self.global_step})
 
@@ -353,6 +344,33 @@ class Trainer:
         out["tokens"] = self.model.tokenizer.convert_ids_to_tokens(t["input_ids"][0])
         return out
 
+
+    @torch.no_grad
+    def generate_on_validation_set(self, validation_text, mask=None, speaker_ids=None, name="Generate/Validation"):
+        text_idx = validation_text.shape[1] // 2
+
+        text = validation_text[:, :text_idx]
+        speaker_id = speaker_ids[:, :text_idx]
+        m = mask[:, :text_idx]
+
+        out = self.model.generate(input_ids=text, speaker_ids=speaker_id, mask=m, output_scores=True, n_sequences=10)
+        G = {"tokens": self.model.tokenizer.batch_decode(out['sequences'][:, len(text):])}
+
+        input = self.model.tokenizer.batch_decode(text)
+        ground_truth = self.model.tokenizer.batch_decode(validation_text[:, text_idx:])
+
+        table = wandb.Table(
+            columns=["context", "truth", "sample"],
+            data=[
+                [sentence, truth, sample]
+                for sentence, truth, sample in zip(input, ground_truth, G["tokens"])
+            ]
+        )
+        wandb.log({
+            f"{name}": table,
+            "global_step": self.global_step,
+        })
+
     def trp_example_plots(self, name="TRP/example"):
         turn_list = [
             ["yesterday we met in the park", "okay when will you meet again", "tomorrow"],
@@ -368,7 +386,6 @@ class Trainer:
         for b in range(len(turn_list)):
             out = self.model.from_string(turn_list[b])
             out = self.generate_from_string(out)
-            print(out["tokens"][0])
             fig, _ = plot_trp(
                 trp=out["trp_probs"][0].cpu(),
                 text=out["tokens"],

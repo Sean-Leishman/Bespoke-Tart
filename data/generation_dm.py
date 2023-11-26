@@ -118,6 +118,7 @@ class GenerationDM(Dataset):
         self.data = self.tokenize()
 
         self.data = self.split_to_length()
+        # self.data = self.pad_to_length()
 
         self.save_to_disk()
 
@@ -142,7 +143,8 @@ class GenerationDM(Dataset):
 
     """
     Splits each dialog into sequences of `max_length` tokens or whatever is left with overlap length in token overlap
-    between sequences
+    between sequences.
+    Also pads to max_length
     """
     def split_to_length(self):
         # Augment entirety of datasets
@@ -150,13 +152,11 @@ class GenerationDM(Dataset):
         start_idx = 0
         end_idx = self.overlap_length
         # self.dataset iterates data of each dataset
+
         for dialog in self.data:
             output = {}
             tokens = dialog['input_ids'][0]
             types = dialog['token_type_ids'][0]
-
-
-
 
             while end_idx <= len(tokens):
                 # Split to appropriate lengths
@@ -170,9 +170,24 @@ class GenerationDM(Dataset):
                 output['input_ids'] = tokens[start_idx:end_idx].clone().detach()
                 output['token_type_ids'] = types[start_idx:end_idx].clone().detach()
                 output['attention_mask'] = torch.ones(end_idx - start_idx)
+
                 result.append(output)
 
         return result
+
+    def pad_to_length(self):
+        padded_arr = torch.ones((len(self), self.max_length))
+
+        for dialog in self.data:
+            input_ids = torch.cat([dialog['input_ids'], padded_arr])
+            attention_mask = torch.cat([dialog['attention_mask'], padded_arr])
+            token_type_ids = torch.cat([dialog['token_type_ids'], padded_arr])
+
+            input_ids = torch.nn.utils.rnn.pad_sequence(
+                [dialog['input_ids'], padded_arr], padding_value=self.tokenizer.pad_token_id,
+                )
+
+
 
 
     """
