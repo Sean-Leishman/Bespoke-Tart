@@ -328,6 +328,21 @@ def _add_dialogue_for_timing(text, end, curr_idx=0):
     return []
 
 
+def remove_overlaps(dialogs, speakers):
+    drefined = [dialogs[0]]
+    for idx, curr in enumerate(dialogs[1:]):
+        if drefined[-1]["start"] <= curr["start"] <= drefined[-1]["end"]:
+            if drefined[-1]["start"] <= curr["end"] <= drefined[-1]["end"]:
+                continue
+
+        if curr["speaker"] == drefined[-1]["speaker"]:
+            drefined[-1]["text"] += " " + curr["text"]
+            drefined[-1]["end"] = curr["end"]
+        else:
+            drefined.append(curr)
+
+    return drefined, speakers
+
 def remove_backchannels(dialogs, speakers):
     last_endA = 0
     last_endB = 0
@@ -382,11 +397,11 @@ def combine_consecutive_trps(dialogs):
 
 
 def _remove_backchannel(backchannelA, dialog):
-    return (dialog['start'] - backchannelA['end']) > 0.5
+    return (dialog['start'] - backchannelA['end']) > 0.05
 
 
 def _potential_backchannel(last_phrase, current_phrase):
-    if (current_phrase['start'] - last_phrase) > 0.5 and current_phrase['text'] in BACKCHANNELS:
+    if (current_phrase['start'] - last_phrase) > 0.05 and current_phrase['text'] in BACKCHANNELS:
         return current_phrase
 
     return None

@@ -241,7 +241,8 @@ class Trainer:
             self.global_step += 1
 
         if self.scheduler:
-            self.scheduler.step()
+            #self.scheduler.step()
+            pass
 
         avg_loss = total_loss / len(train_dl)
         metrics = self.compute_metrics(pred_label)
@@ -278,11 +279,6 @@ class Trainer:
 
     def validate(self, test_dl):
         total_loss, total_count = 0, 0
-        total_f1 = 0
-        tp, fp, fn, tn = 0, 0, 0, 0
-
-        padding = torch.zeros((8, 183)).to(self.config.device)
-        padding[:, :5] = 1
 
         pred_label = []
 
@@ -309,7 +305,7 @@ class Trainer:
             metrics['avg_loss'] = total_loss / len(test_dl)
 
             self.generate_on_validation_set(input_ids, mask=attention_mask, speaker_ids=token_type_ids)
-            wandb.log({"val_loss": avg_loss,
+            wandb.log({"val_loss": round(total_loss / len(test_dl), 4),
                        "global_step": self.global_step})
 
             progress_bar.disable = False

@@ -38,10 +38,13 @@ class GPT(torch.nn.Module):
         self.weight_regular_token = weight_regular_token
         self.weight_eos_token = weight_eos_token
 
+        update_params = ["embd_pdrop", "attn_pdrop", "resid_pdrop"]
         if not bert_finetuning:
             self.logger.info('model: bert parameters frozen')
             for param in self.gpt.parameters():
-                param.requires_grad = False
+                param.requires_grad = True
+
+
 
 
     @torch.no_grad()
@@ -54,17 +57,21 @@ class GPT(torch.nn.Module):
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None, labels=None, projection_labels=None):
 
-        out = self.gpt(
+        out = self.gpt.transformer(
             input_ids,
             # labels=labels,
             attention_mask=attention_mask,
-            token_type_ids=token_type_ids,
+            #token_type_ids=token_type_ids,
             output_hidden_states=True,
         )
 
+        hidden_states = out[0]
+
+
+        lm_logits = self.gpt.lm_head(hidden_states)
         loss = None
         if labels is not None:
-            loss = self.cross_entropy_loss(out.logits, labels)
+            loss = self.cross_entropy_loss(lm_logits, labels)
 
         projection_logits = self.trp_projection_head(out.hidden_states[-1])
         projection_loss = None
@@ -73,7 +80,7 @@ class GPT(torch.nn.Module):
 
         return GPT2DoubleHeadsModelOutput(
             loss=loss,
-            logits=out.logits,
+            logits=lm_logits,
             mc_loss=projection_loss,
             mc_logits=projection_logits,
             past_key_values=out.past_key_values,
@@ -141,16 +148,23 @@ class GPT(torch.nn.Module):
             )
         return sample_output
 
-    def init_tokenizer(self):
+    def init_tokenizer(self, tokens=['!','?', '.']):
         num_added_token = self.tokenizer.add_special_tokens(
             {
-                "eos_token": "[SEP]",
+                "eos_token": "<ts>",
                 "pad_token": "<|endoftext|>"
             }
         )
         self.gpt.resize_token_embeddings(len(self.tokenizer))
         # self.tokenizer.sep_token_id = self.tokenizer.convert_tokens_to_ids('[SEP]')
 
+        ts = self.tokenizer.eos_token_id
+        with torch.no_grad():
+            ids = torch.tensor(self.tokenizer.convert_tokens_to_ids(tokens))
+            avg_emb = self.gpt.transformer.wte(ids).mean(0)
+            self.gpt.transformer.wte.weight.data[ts] = avg_emb
+
+        print(f"Initalized {self.tokenizer.eos_token} -> avg({tokens})")
         self.logger.info(
             f"model: add {self.tokenizer.all_special_tokens} token/s")
 
@@ -165,7 +179,7 @@ class GPT(torch.nn.Module):
 
     def from_string(self, string):
         output = {}
-        output['dialog'] = "[SEP]".join(string) + "[SEP]"
+        output['dialog'] = "<ts>".join(string) + "<ts>"
         tokens = self.tokenizer(output['dialog'], return_tensors="pt", truncation=True)
 
         output['input_ids'] = tokens['input_ids'].to(self.config.device)
@@ -173,7 +187,7 @@ class GPT(torch.nn.Module):
         current_speaker = 'A'
         token_type_ids = [[]]
 
-        SEP_token = self.tokenizer.convert_tokens_to_ids("[SEP]")
+        SEP_token = self.tokenizer.convert_tokens_to_ids("<ts>")
         for token in output['input_ids'][0]:
             # Is [SEP] token self.tokenizer.encode('[SEP]') -> [101, 102, 102]
             if token.item() == SEP_token:

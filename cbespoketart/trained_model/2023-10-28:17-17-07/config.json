@@ -1,1 +1,0 @@
-{"cuda": "true", "load_model": "false", "load_path": "trained_model/", "save_path": "trained_model/", "bert_type": "distilbert", "bert_finetuning": "false", "bert_pretraining": "bert-base-uncased", "epoch_size": 10, "batch_size": 128, "learning_rate": 0.002, "early_stop": 5, "evaluate": "false", "description": "set learning rate to 0.002", "loss_weight": 1.355, "device": "cuda"}

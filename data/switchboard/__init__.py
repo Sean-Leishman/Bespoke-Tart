@@ -7,7 +7,7 @@ from transformers import AutoTokenizer
 
 from sklearn.model_selection import train_test_split
 from .utils import extract_dialog, extract_speaker_timings, \
-    combine_dialogue_with_timings, remove_backchannels, combine_consecutive_trps
+    combine_dialogue_with_timings, remove_backchannels, combine_consecutive_trps, remove_overlaps
 
 
 def get_abs_path(filepath):
@@ -53,14 +53,16 @@ class SwitchboardDataset(Dataset):
             line = f.readline()
             while line:
                 values = line.split("\t")
-                conv_id = values[0]
+                conv_id = values[0].strip()
 
                 prefix_dict = os.path.join(
                     TRANSCRIPT_DIRECTORIES[0], conv_id[:2], conv_id)
 
                 split_filenames[conv_id] = []
+                filenames = os.listdir(prefix_dict)
+                filenames.sort()
 
-                for file in values[1:]:
+                for file in filenames:
                     split_filenames[conv_id].append(os.path.join(
                         prefix_dict, file.strip()))
 
@@ -115,7 +117,8 @@ class SwitchboardDataset(Dataset):
             # dialog = remove_words_from_dialog(dialog)
 
             dialog, speaker = combine_dialogue_with_timings(dialog, vad)
-            dialog, speaker = remove_backchannels(dialog, speaker)
+            # dialog, speaker = remove_backchannels(dialog, speaker)
+            dialog,speaker = remove_overlaps(dialog, speaker)
 
             dialog = combine_consecutive_trps(dialog)
 

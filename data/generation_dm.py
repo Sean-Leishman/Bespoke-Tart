@@ -1,5 +1,7 @@
+import copy
 import os
 import logging
+import re
 
 import torch
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
@@ -58,7 +60,7 @@ class GenerationDM(Dataset):
                  overwrite=False,
                  load_from_cache_file=False,
                  max_length=256,
-                 keep_length=20,
+                 keep_length=64,
                  overlap_length=10,
                  dev_mode=False,
                  ):
@@ -112,6 +114,7 @@ class GenerationDM(Dataset):
 
         for load_dataset in DATASETS:
             dataset = load_dataset(split=self.split)
+            # dataset = self.filter_empty_turns(dataset)
             self.datasets.append(dataset)
 
         self.dataset = ConcatDataset(self.datasets)
@@ -140,6 +143,17 @@ class GenerationDM(Dataset):
 
         return dialog_idx, token_idx
 
+    def filter_empty_turns(self, dataset):
+        """
+        return only dialogs with no empty turns
+        """
+        for idx,dataset in enumerate(dataset):
+            dialogs = []
+            for dialog in dataset:
+                if not (dialog['text'] == "" or not re.search(r"\w", dialog['text'])):  # utt is empty
+                    dialogs.append(dialog)
+            dataset[idx] = dialogs
+        return dataset
 
     """
     Splits each dialog into sequences of `max_length` tokens or whatever is left with overlap length in token overlap
@@ -171,7 +185,7 @@ class GenerationDM(Dataset):
                 output['token_type_ids'] = types[start_idx:end_idx].clone().detach()
                 output['attention_mask'] = torch.ones(end_idx - start_idx)
 
-                result.append(output)
+                result.append(copy.deepcopy(output))
 
         return result
 
@@ -202,7 +216,7 @@ class GenerationDM(Dataset):
             output = {}
             dialog = [dialog['text'] for dialog in dataset]
 
-            output['dialog'] = "[SEP]".join(dialog)
+            output['dialog'] = "<ts>".join(dialog)
             tokens = self.tokenize_sentence(output['dialog'])
 
             output['input_ids'] = tokens['input_ids']
@@ -243,11 +257,27 @@ class GenerationDM(Dataset):
         return indexes
 
 
+def init_tokenizer(tokens=['!', '?', '.']):
+    tokenizer = AutoTokenizer.from_pretrained("gpt2")
+    num_added_token = tokenizer.add_special_tokens(
+        {
+            "eos_token": "<ts>",
+            "pad_token": "<|endoftext|>"
+        }
+    )
+    # self.tokenizer.sep_token_id = self.tokenizer.convert_tokens_to_ids('[SEP]')
+
+    ts = tokenizer.eos_token_id
+
+    return tokenizer
+
+
 if __name__ == "__main__":
+    tokenizer = init_tokenizer()
     ts = GenerationDM(
-        tokenizer=AutoTokenizer.from_pretrained("bert-base-uncased"), overwrite=False)
+        tokenizer=tokenizer, overwrite=True)
     ts.prepare_data()
-    dl = DataLoader(ts, batch_size=320, collate_fn=collate_fn)
+    dl = DataLoader(ts, batch_size=20, collate_fn=collate_fn)
 
     batch = next(iter(dl))
 
@@ -255,3 +285,4 @@ if __name__ == "__main__":
         print(batch['input_ids'].shape)
         print(ts.tokenizer.decode(batch['input_ids'][i]))
         print("\n")
+    print("YES")
