@@ -82,6 +82,10 @@ def sub_regex(s):
     s = re.sub(r"\[noise\]", "", s)
     s = re.sub(r"\[vocalized-noise\]", "", s)
 
+    # <b_aside>, <e_aside>
+    s = re.sub(r"<b_aside>", "", s)
+    s = re.sub(r"<e_aside>", "", s)
+
     # laughter
     s = re.sub(r"\[laughter\]", "", s)
     # laughing and speech e.g. [laughter-yeah] -> yeah
@@ -217,6 +221,7 @@ def _extract_utterance_word_feats(trans_filename, words_filename, speaker):
                     "wfeats": word_feat,
                     "start": word_feat[0]["start"],
                     "end": word_feat[-1]["end"],
+                    "speaker": speaker,
                 }
             )
     return utterances
@@ -234,13 +239,26 @@ def remove_words_from_dialog(dialog):
 
     return new_dialog
 
+"""
+Only combines based on turns identified within the structure of the conversation and so based 
+on the start of an utterance without consideration of the word level
+"""
+def combine_dialogue_without_timings(dialogue):
+    combined = dialogue[0]
+    combined.extend(dialogue[1])
+    combined.sort(key=lambda key: key['start'])
+    return combined
 
+
+"""
+Combines dialogues from both speakers on a word-level. So timings extracted earlier on a word-level are used 
+to combine the two dialogues
+"""
 def combine_dialogue_with_timings(dialogue, timings):
     i1, j1 = 0, 0
     i2, j2 = 0, 0
     curr_speaker = None
     new_dialogue = []
-    speaker = []
 
     curr_word_idxA = 0
     curr_word_idxB = 0
@@ -292,7 +310,7 @@ def combine_dialogue_with_timings(dialogue, timings):
             j1 += 1
 
     # _pp_dialogue(new_dialogue)
-    return new_dialogue, speaker
+    return new_dialogue
 
 
 def _pp_dialogue(dialogue):
@@ -328,7 +346,7 @@ def _add_dialogue_for_timing(text, end, curr_idx=0):
     return []
 
 
-def remove_overlaps(dialogs, speakers):
+def remove_overlaps(dialogs):
     drefined = [dialogs[0]]
     for idx, curr in enumerate(dialogs[1:]):
         if drefined[-1]["start"] <= curr["start"] <= drefined[-1]["end"]:
@@ -341,9 +359,9 @@ def remove_overlaps(dialogs, speakers):
         else:
             drefined.append(curr)
 
-    return drefined, speakers
+    return drefined
 
-def remove_backchannels(dialogs, speakers):
+def remove_backchannels(dialogs):
     last_endA = 0
     last_endB = 0
 
@@ -374,7 +392,7 @@ def remove_backchannels(dialogs, speakers):
 
     # _pp_dialogue(dialogs)
     # _pp_dialogue(output)
-    return output, speakers
+    return output
 
 
 """
