@@ -18,6 +18,7 @@ from trainer import Trainer, get_abs_path
 from transformers import AdamW
 from transformers.optimization import get_linear_schedule_with_warmup
 
+
 import wandb
 
 def build_logger():
@@ -163,7 +164,7 @@ def main(config):
     # criterion = torch.nn.BCEWithLogitsLoss(
     #    pos_weight=torch.FloatTensor([config.loss_weight]).to(config.device))
     criterion = torch.nn.CrossEntropyLoss().to(config.device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate) #, weight_decay=config.weight_decay)
 
     if (config.load_model == 'true'):
         trainer = Trainer(model=model, criterion=criterion,
@@ -185,7 +186,7 @@ def main(config):
             batch_size=config.batch_size,
             collate_fn=train_ds.collate_fn,
             num_workers=8,
-            shuffle=True
+            shuffle=False
         )
         test_ds = GenerationDM(
             split="test",
@@ -201,7 +202,8 @@ def main(config):
             shuffle=True
         )
 
-        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.90)
+        # scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.90)
+        scheduler = None
 
         logging.getLogger(__name__).info("model: train model")
         history = trainer.train(train_dl, test_dl, scheduler=scheduler)

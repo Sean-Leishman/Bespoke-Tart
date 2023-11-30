@@ -98,16 +98,6 @@ class Trainer:
 
         self.scheduler = scheduler
 
-        test_metrics = self.validate(test_dl)
-        self.trp_example_plots()
-        self.text_generation_examples()
-        for key in test_metrics:
-            if key not in self.test_history:
-                self.test_history[key] = []
-            self.test_history[key].append(test_metrics[key])
-
-        self.save_history(self.save_path)
-
         for idx in progress_bar:
             train_metrics = self.train_epoch(train_dl)
             test_metrics = self.validate(test_dl)
@@ -223,6 +213,10 @@ class Trainer:
             token_type_ids = batch["token_type_ids"].to(self.device)
 
             labels = self.generate_labels(input_ids, mask=attention_mask)
+
+            #print(batch)
+            #print(self.model.tokenizer.convert_ids_to_tokens(batch['input_ids'][0].tolist()))
+            # print(self.optimizer.state_dict())
             out = self.model.forward(
                 input_ids, labels=labels, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
@@ -317,7 +311,7 @@ class Trainer:
         return metrics
 
     def save_training(self, path):
-        self.model.tokenizer.save_pretrained(os.path.join(os.path.dirname(path), "tokenizer"))
+        # self.model.tokenizer.save_pretrained(os.path.join(os.path.dirname(path), "tokenizer"))
         torch.save(self.best, path)
 
     def save_history(self, path):

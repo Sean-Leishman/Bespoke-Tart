@@ -8,6 +8,18 @@ from transformers import BertModel, DistilBertModel, AutoTokenizer, AutoModel
 from transformers import GPT2LMHeadModel, GPT2Config
 from transformers.models.gpt2.modeling_gpt2 import GPT2DoubleHeadsModelOutput
 
+from tokenizers import Regex
+from tokenizers.normalizers import (
+    Lowercase,
+    NFD,
+    StripAccents,
+    Replace,
+    Strip,
+    Sequence,
+)
+
+from tokenizer import SpokenDialogTokenizer
+
 class GPT(torch.nn.Module):
     def __init__(self,
                  pretrained_model_name="gpt2",
@@ -20,7 +32,7 @@ class GPT(torch.nn.Module):
         self.logger = logging.getLogger(__name__)
         self.config = config
 
-        self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name)
+
         """
         self.bert = BertModel.from_pretrained(pretrained_model_name)
         self.bert.to(config.device)
@@ -30,13 +42,15 @@ class GPT(torch.nn.Module):
 
         config = GPT2Config.from_pretrained(pretrained_model_name)
         self.gpt = GPT2LMHeadModel.from_pretrained(pretrained_model_name, config=config)
-        self.init_tokenizer()
 
         self.trp_projection_steps = 5
         self.trp_projection_head = torch.nn.Linear(self.gpt.config.hidden_size, 1)
 
         self.weight_regular_token = weight_regular_token
         self.weight_eos_token = weight_eos_token
+
+        self.tokenizer = SpokenDialogTokenizer()
+        self.gpt.resize_token_embeddings(len(self.tokenizer))
 
         update_params = ["embd_pdrop", "attn_pdrop", "resid_pdrop"]
         if not bert_finetuning:
@@ -67,7 +81,6 @@ class GPT(torch.nn.Module):
 
         hidden_states = out[0]
 
-
         lm_logits = self.gpt.lm_head(hidden_states)
         loss = None
         if labels is not None:
@@ -92,7 +105,7 @@ class GPT(torch.nn.Module):
         weight = self.get_loss_weight()
 
         loss_fct = torch.nn.CrossEntropyLoss(weight=weight, reduction="none")
-        other_loss_fct = torch.nn.CrossEntropyLoss()
+        other_loss_fct = torch.nn.CrossEntropyLoss(weight=None, reduction="none")
         shift_logits = logits[..., :-1, :].contiguous()
         shift_labels = labels[..., 1:].contiguous()
 
@@ -149,12 +162,6 @@ class GPT(torch.nn.Module):
         return sample_output
 
     def init_tokenizer(self, tokens=['!','?', '.']):
-        num_added_token = self.tokenizer.add_special_tokens(
-            {
-                "eos_token": "<ts>",
-                "pad_token": "<|endoftext|>"
-            }
-        )
         self.gpt.resize_token_embeddings(len(self.tokenizer))
         # self.tokenizer.sep_token_id = self.tokenizer.convert_tokens_to_ids('[SEP]')
 
@@ -179,7 +186,7 @@ class GPT(torch.nn.Module):
 
     def from_string(self, string):
         output = {}
-        output['dialog'] = "<ts>".join(string) + "<ts>"
+        output['dialog'] = "<ts> ".join(string) + "<ts>"
         tokens = self.tokenizer(output['dialog'], return_tensors="pt", truncation=True)
 
         output['input_ids'] = tokens['input_ids'].to(self.config.device)
