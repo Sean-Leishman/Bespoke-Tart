@@ -15,8 +15,6 @@ from data.switchboard import SwitchboardDataset
 def get_abs_path(filepath):
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), filepath)
 
-
-def collate_fn(batch):
     output = {}
     input_ids = [item['input_ids'] for item in batch]
     attention_masks = [item['attention_mask'] for item in batch]
@@ -88,8 +86,6 @@ class GenerationDM(Dataset):
 
         self.dev_mode = dev_mode
 
-        self.collate_fn = collate_fn
-
     def __len__(self):
         if self.dev_mode:
             return 1000
@@ -98,6 +94,17 @@ class GenerationDM(Dataset):
 
     def __getitem__(self, idx):
         return self.data[idx]
+
+    def collate_fn(self,batch):
+        ret = self.tokenizer.pad(
+            {"input_ids": [b["input_ids"][: self.max_length] for b in batch]}
+        )
+        ret["token_type_ids"] = self.tokenizer.pad(
+            {"input_ids": [b["token_type_ids"][: self.max_length] for b in batch]}
+        )["input_ids"]
+        for k, v in ret.items():
+            ret[k] = v.clone().detach()
+        return ret
 
     def get_save_load_path(self):
         save_load_dir = get_abs_path(self.savepath)
@@ -216,7 +223,8 @@ class GenerationDM(Dataset):
             output = {}
             dialog = [dialog['text'] for dialog in dataset]
 
-            output['dialog'] = "<ts>".join(dialog)
+            # Add space after turn shift to produce G-hat word
+            output['dialog'] = "<ts> ".join(dialog)
             tokens = self.tokenize_sentence(output['dialog'])
 
             output['input_ids'] = tokens['input_ids']
@@ -226,7 +234,7 @@ class GenerationDM(Dataset):
             token_type_ids = [[]]
             for token in output['input_ids'][0]:
                 # Is [SEP] token self.tokenizer.encode('[SEP]') -> [101, 102, 102]
-                if token.item() == self.tokenizer.sep_token_id:
+                if token.item() == self.tokenizer.eos_token_id:
                     current_speaker = 'A' if current_speaker == 'B' else 'B'
 
                 token_type_ids[0].append(
