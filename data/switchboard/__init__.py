@@ -7,7 +7,8 @@ from transformers import AutoTokenizer
 
 from sklearn.model_selection import train_test_split
 from .utils import extract_dialog, extract_speaker_timings, \
-    combine_dialogue_with_timings, remove_backchannels, combine_consecutive_trps, remove_overlaps
+    combine_dialogue_with_timings, remove_backchannels, combine_consecutive_trps, remove_overlaps, \
+    combine_dialogue_without_timings
 
 
 def get_abs_path(filepath):
@@ -116,9 +117,10 @@ class SwitchboardDataset(Dataset):
             vad = extract_speaker_timings(dialog)
             # dialog = remove_words_from_dialog(dialog)
 
-            dialog, speaker = combine_dialogue_with_timings(dialog, vad)
-            # dialog, speaker = remove_backchannels(dialog, speaker)
-            dialog,speaker = remove_overlaps(dialog, speaker)
+            # dialog = combine_dialogue_with_timings(dialog, vad)
+            dialog = combine_dialogue_without_timings(dialog)
+            # dialog, speaker = remove_backchannels(dialog)
+            dialog = remove_overlaps(dialog)
 
             dialog = combine_consecutive_trps(dialog)
 
