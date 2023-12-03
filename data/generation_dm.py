@@ -10,7 +10,7 @@ from transformers import AutoTokenizer
 
 from data.edacc import EdAccDataset
 from data.switchboard import SwitchboardDataset
-
+from gptonly.tokenizer import SpokenDialogTokenizer
 
 def get_abs_path(filepath):
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), filepath)
@@ -266,17 +266,7 @@ class GenerationDM(Dataset):
 
 
 def init_tokenizer(tokens=['!', '?', '.']):
-    tokenizer = AutoTokenizer.from_pretrained("gpt2")
-    num_added_token = tokenizer.add_special_tokens(
-        {
-            "eos_token": "<ts>",
-            "pad_token": "<|endoftext|>"
-        }
-    )
-    # self.tokenizer.sep_token_id = self.tokenizer.convert_tokens_to_ids('[SEP]')
-
-    ts = tokenizer.eos_token_id
-
+    tokenizer = SpokenDialogTokenizer()
     return tokenizer
 
 
@@ -285,7 +275,7 @@ if __name__ == "__main__":
     ts = GenerationDM(
         tokenizer=tokenizer, overwrite=True)
     ts.prepare_data()
-    dl = DataLoader(ts, batch_size=20, collate_fn=collate_fn)
+    dl = DataLoader(ts, batch_size=20, collate_fn=ts.collate_fn)
 
     batch = next(iter(dl))
 

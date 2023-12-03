@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 TS_TOKENS = {
     "eos_token": "<ts>",
     "pad_token": "<|endoftext|>",
+    "additional_special_tokens": ["<speaker1>", "<speaker2>"],
 }
 
 
@@ -109,7 +110,7 @@ class SpokenDialogTokenizer(SpokenNormalizer):
 
         # Set to large number to avoid warnings
         # Manually keep track of your models maximum input length
-        # self._tokenizer.model_max_length = 1e30
+        self._tokenizer.model_max_length = 1e30
 
         # This goes in logging
         num_added_toks = self._tokenizer.add_special_tokens(TS_TOKENS)
@@ -189,10 +190,7 @@ class SpokenDialogTokenizer(SpokenNormalizer):
             text=text,
             **kwargs,
         )
-        
-        if len([x for x in self._tokenizer.convert_ids_to_tokens(encoding['input_ids'][0].tolist()) if ("<" in x or ">" in x) and "<ts>" != x]) > 0:
-            # Error caused by <b_aside> <e_aside>
-            print("here")
+
         return encoding
 
     def idx_to_tokens(self, ids):

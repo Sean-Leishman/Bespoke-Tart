@@ -18,7 +18,7 @@ from tokenizers.normalizers import (
     Sequence,
 )
 
-from tokenizer import SpokenDialogTokenizer
+from gptonly.tokenizer import SpokenDialogTokenizer
 
 class GPT(torch.nn.Module):
     def __init__(self,
@@ -50,12 +50,13 @@ class GPT(torch.nn.Module):
         self.weight_eos_token = weight_eos_token
 
         self.tokenizer = SpokenDialogTokenizer()
-        self.gpt.resize_token_embeddings(len(self.tokenizer))
+        self.init_tokenizer()
+        # self.gpt.resize_token_embeddings(new_num_tokens=len(self.tokenizer))
 
         update_params = ["embd_pdrop", "attn_pdrop", "resid_pdrop"]
         if not bert_finetuning:
             self.logger.info('model: bert parameters frozen')
-            for param in self.gpt.parameters():
+            for param in self.parameters():
                 param.requires_grad = True
 
 
@@ -116,6 +117,7 @@ class GPT(torch.nn.Module):
         if reduction != "none":
             loss = loss.mean()
 
+        print(loss)
         return loss
 
     def bce_loss(self, logits, labels):
@@ -162,7 +164,7 @@ class GPT(torch.nn.Module):
         return sample_output
 
     def init_tokenizer(self, tokens=['!','?', '.']):
-        self.gpt.resize_token_embeddings(len(self.tokenizer))
+        self.gpt.resize_token_embeddings(new_num_tokens=len(self.tokenizer))
         # self.tokenizer.sep_token_id = self.tokenizer.convert_tokens_to_ids('[SEP]')
 
         ts = self.tokenizer.eos_token_id
@@ -172,8 +174,6 @@ class GPT(torch.nn.Module):
             self.gpt.transformer.wte.weight.data[ts] = avg_emb
 
         print(f"Initalized {self.tokenizer.eos_token} -> avg({tokens})")
-        self.logger.info(
-            f"model: add {self.tokenizer.all_special_tokens} token/s")
 
     def get_tokenizer(self):
         return self.tokenizer
