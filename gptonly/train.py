@@ -199,7 +199,7 @@ def main(config):
             batch_size=config.batch_size,
             collate_fn=test_ds.collate_fn,
             num_workers=8,
-            shuffle=True
+            shuffle=False
         )
 
         # scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.90)

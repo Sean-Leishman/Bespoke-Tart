@@ -273,9 +273,9 @@ def init_tokenizer(tokens=['!', '?', '.']):
 if __name__ == "__main__":
     tokenizer = init_tokenizer()
     ts = GenerationDM(
-        tokenizer=tokenizer, overwrite=True)
+        tokenizer=tokenizer, overwrite=True, split="test")
     ts.prepare_data()
-    dl = DataLoader(ts, batch_size=20, collate_fn=ts.collate_fn)
+    dl = DataLoader(ts, batch_size=4, collate_fn=ts.collate_fn)
 
     batch = next(iter(dl))
 

@@ -117,7 +117,6 @@ class GPT(torch.nn.Module):
         if reduction != "none":
             loss = loss.mean()
 
-        print(loss)
         return loss
 
     def bce_loss(self, logits, labels):
