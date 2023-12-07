@@ -10,6 +10,7 @@ from transformers import AutoTokenizer
 
 from data.edacc import EdAccDataset
 from data.switchboard import SwitchboardDataset
+from data.fisher import FisherDataset
 from gptonly.tokenizer import SpokenDialogTokenizer
 
 def get_abs_path(filepath):
