@@ -30,16 +30,26 @@ def get_new_filename(save_dir):
 
 
 class Trainer:
-    def __init__(self, model=None, criterion=None, optimizer=None, config=None,
-                 load_from_checkpoint=None):
+    def __init__(self,
+                 model=None,
+                 criterion=None,
+                 optimizer=None,
+                 epochs=None,
+                 load_from_checkpoint=None,
+                 device=None,
+                 log_interval=None,
+                 save_path="./",
+                 early_stop=5,
+                 config=None,
+                 **kwargs,
+            ):
 
         self.model = model
         self.criterion = criterion
         self.optimizer = optimizer
-        self.config = config
-        self.epochs = config.epochs
-        self.device = torch.device(
-            config.device if config is not None else "cpu")
+        self.epochs = epochs
+        self.device = device
+        self.log_interval = log_interval
 
         self.epoch = 0
 
@@ -51,20 +61,18 @@ class Trainer:
             'model_state_dict': None,
             'optimizer_state_dict': None,
             'loss': None,
-            'config': config,
         }
 
-        self.save_path = get_abs_path(get_new_filename(config.save_path))
+        self.save_path = get_abs_path(get_new_filename(save_path))
         if not os.path.isdir(self.save_path):
             os.mkdir(self.save_path)
 
         with open(os.path.join(self.save_path, "config.json"), "w") as config_file:
-            print(config)
             json.dump(vars(config), config_file)
 
         self.logger = logging.getLogger(__name__)
-        self.train_interval = 1000
-        self.val_interval = 500
+
+        self.early_stop = early_stop
 
         self.load_model_file = load_from_checkpoint
         if self.load_model_file is not None:
@@ -72,10 +80,20 @@ class Trainer:
 
         self.metrics = {
             'rouge': evaluate.load("rouge"),
-            'acc': BinaryAccuracy().to(self.config.device),
-            'f1': BinaryF1Score().to(self.config.device),
-            'recall': BinaryRecall().to(self.config.device),
+            'acc': BinaryAccuracy().to(self.device),
+            'f1': BinaryF1Score().to(self.device),
+            'recall': BinaryRecall().to(self.device),
         }
+
+        self.thresholds = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+        self.bacc = [{
+           "tp":0,
+           "fp":0,
+           "fn":0,
+           "tn":0,
+           "bacc":0,
+           "threshold":threshold,
+        } for threshold in self.thresholds]
 
         self.global_step = 0
 
@@ -97,6 +115,7 @@ class Trainer:
                                   self.epochs), desc='Epoch   ')
 
         self.scheduler = scheduler
+        test_metrics = self.validate(test_dl)
 
         for idx in progress_bar:
             train_metrics = self.train_epoch(train_dl)
@@ -138,7 +157,7 @@ class Trainer:
             else:
                 not_improving_x += 1
 
-                if not_improving_x >= self.config.early_stop and self.config.early_stop > 0:
+                if not_improving_x >= self.early_stop and self.early_stop > 0:
                     self.logger.info("train: early stop")
                     progress_bar.close()
                     return self.train_history
@@ -169,9 +188,9 @@ class Trainer:
     def compute_metrics(self, p):
         # SEP Token within output window
         id = self.model.tokenizer.convert_tokens_to_ids('[SEP]')
-        true_predictions = [(prediction_batch[:, :self.config.output_window] == id).any(dim=1) for prediction_batch, _
+        true_predictions = [(prediction_batch[:, :self.output_window] == id).any(dim=1) for prediction_batch, _
                             in p]
-        true_labels = [(label_batch[:, :self.config.output_window] == id).any(dim=1) for _, label_batch in p]
+        true_labels = [(label_batch[:, :self.output_window] == id).any(dim=1) for _, label_batch in p]
 
         # Rouge
         pred_strs = [self.model.tokenizer.batch_decode(pred) for pred, _ in p]
@@ -181,13 +200,12 @@ class Trainer:
             self.metrics['rouge'].compute(predictions=pred_str, references=label_str, rouge_types=["rouge2"])['rouge2']
             for
             pred_str, label_str in zip(pred_strs, label_strs)]
-
         results = {
-            'eot_acc': torch.mean(torch.tensor([self.metrics['acc'].to(self.config.device)(p, l) for p, l in
+            'eot_acc': torch.mean(torch.tensor([self.metrics['acc'].to(self.device)(p, l) for p, l in
                                                 zip(true_predictions, true_labels)])).item(),
-            'eot_f1': torch.mean(torch.tensor([self.metrics['f1'].to(self.config.device)(p, l) for p, l in
+            'eot_f1': torch.mean(torch.tensor([self.metrics['f1'].to(self.device)(p, l) for p, l in
                                                zip(true_predictions, true_labels)])).item(),
-            'eot_recall': torch.mean(torch.tensor([self.metrics['recall'].to(self.config.device)(p, l) for p, l in
+            'eot_recall': torch.mean(torch.tensor([self.metrics['recall'].to(self.device)(p, l) for p, l in
                                                    zip(true_predictions, true_labels)])).item(),
             'rouge_mean': np.mean(rouge_out),
         }
@@ -200,7 +218,7 @@ class Trainer:
         tp, fp, fn, tn = 0, 0, 0, 0
 
         progress_bar = tqdm(train_dl, desc='Training', unit="batch")
-        padding = torch.zeros((8, 183)).to(self.config.device)
+        padding = torch.zeros((8, 183)).to(self.device)
         padding[:, :5] = 1
 
         pred_label = []
@@ -214,9 +232,6 @@ class Trainer:
 
             labels = self.generate_labels(input_ids, mask=attention_mask)
 
-            #print(batch)
-            #print(self.model.tokenizer.convert_ids_to_tokens(batch['input_ids'][0].tolist()))
-            # print(self.optimizer.state_dict())
             out = self.model.forward(
                 input_ids, labels=labels, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
@@ -224,7 +239,7 @@ class Trainer:
             loss.backward()
             self.optimizer.step()
 
-            if step % self.config.log_interval == 0:
+            if step % self.log_interval == 0:
                 wandb.log({"loss": loss,
                            "global_step": self.global_step})
 
@@ -258,7 +273,7 @@ class Trainer:
         return labels
 
     def calculate_loss(self, output, labels, padding=None):
-        mask = torch.ones(labels.shape).to(self.config.device)
+        mask = torch.ones(labels.shape).to(self.device)
         if padding is not None:
             mask = padding
 
@@ -273,6 +288,7 @@ class Trainer:
 
     def validate(self, test_dl):
         total_loss, total_count = 0, 0
+        tp, fp, fn, tn = 0,0,0,0
 
         pred_label = []
 
@@ -292,15 +308,19 @@ class Trainer:
                 loss = out.loss
                 total_loss += loss.item()
 
+                self.add_to_bacc(out.logits, labels)
+
                 avg_loss = round(total_loss / (step + 1), 4)
                 progress_bar.set_postfix_str(f"loss={avg_loss}")
 
             metrics = self.compute_metrics(pred_label)
             metrics['avg_loss'] = total_loss / len(test_dl)
 
+            metrics['bacc'] = self.compute_bacc()
             self.generate_on_validation_set(input_ids, mask=attention_mask, speaker_ids=token_type_ids)
             wandb.log({"val_loss": round(total_loss / len(test_dl), 4),
-                       "global_step": self.global_step})
+                       "global_step": self.global_step,
+                       "bacc": metrics['bacc']})
 
             progress_bar.disable = False
             progress_bar.set_postfix_str(self.metric_output(metrics))
@@ -309,6 +329,38 @@ class Trainer:
         self.model.train()
 
         return metrics
+
+    def add_to_bacc(self, logits, labels):
+        probs = logits.softmax(dim=-1)
+        trp_prob = probs[..., self.model.tokenizer.eos_token_id]
+        trp_prob = trp_prob[..., :-1]
+
+        labels = labels[..., 1:]
+        is_trp = labels == self.model.tokenizer.eos_token_id
+        not_trp = labels != self.model.tokenizer.eos_token_id
+        for bacc in self.bacc:
+            thresh = bacc['threshold']
+            bacc['tp'] += (is_trp & (trp_prob > thresh)).sum()
+            bacc['tn'] += (not_trp & (trp_prob < thresh)).sum()
+            bacc['fp'] += (not_trp & (trp_prob > thresh)).sum()
+            bacc['fn'] += (is_trp & (trp_prob < thresh)).sum()
+
+            bacc['bacc'] = ((bacc['tp'] / (bacc['tp'] + bacc['fn'])) + (bacc['tn'] / (bacc['fp'] + bacc['tn']))) / 2
+
+    def compute_bacc(self):
+        max_bacc = max(self.bacc, key=lambda x: x['bacc'])
+
+        self.bacc = [{
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "bacc": 0,
+            "threshold": threshold,
+        } for threshold in self.thresholds]
+
+        return max_bacc['bacc'].cpu()
+
 
     def save_training(self, path):
         # self.model.tokenizer.save_pretrained(os.path.join(os.path.dirname(path), "tokenizer"))
