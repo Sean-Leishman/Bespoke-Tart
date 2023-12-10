@@ -23,15 +23,18 @@ from gptonly.tokenizer import SpokenDialogTokenizer
 class GPT(torch.nn.Module):
     def __init__(self,
                  pretrained_model_name="gpt2",
-                 bert_finetuning=True,
-                 num_labels=1,
+                 finetune=True,
+                 speaker_tokens=True,
                  weight_regular_token=0.5,
                  weight_eos_token=1.0,
-                 config=None):
+                 device=None,
+                 **kwargs,
+            ):
         super(GPT, self).__init__()
         self.logger = logging.getLogger(__name__)
-        self.config = config
 
+        self.device = device
+        self.include_speaker_tokens = speaker_tokens
 
         """
         self.bert = BertModel.from_pretrained(pretrained_model_name)
@@ -54,7 +57,7 @@ class GPT(torch.nn.Module):
         # self.gpt.resize_token_embeddings(new_num_tokens=len(self.tokenizer))
 
         update_params = ["embd_pdrop", "attn_pdrop", "resid_pdrop"]
-        if not bert_finetuning:
+        if not finetune:
             self.logger.info('model: bert parameters frozen')
             for param in self.parameters():
                 param.requires_grad = True
@@ -68,15 +71,17 @@ class GPT(torch.nn.Module):
             torch.ones(len(self.tokenizer), dtype=torch.float) * self.weight_regular_token
         )
         weight[self.tokenizer.eos_token_id] = self.weight_eos_token
-        return weight.to(self.config.device)
+        return weight.to(self.device)
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None, labels=None, projection_labels=None):
+        if not self.include_speaker_tokens:
+            token_type_ids = None
 
         out = self.gpt.transformer(
             input_ids,
             # labels=labels,
             attention_mask=attention_mask,
-            #token_type_ids=token_type_ids,
+            token_type_ids=token_type_ids,
             output_hidden_states=True,
         )
 
@@ -188,7 +193,7 @@ class GPT(torch.nn.Module):
         output['dialog'] = "<ts> ".join(string) + "<ts>"
         tokens = self.tokenizer(output['dialog'], return_tensors="pt", truncation=True)
 
-        output['input_ids'] = tokens['input_ids'].to(self.config.device)
+        output['input_ids'] = tokens['input_ids'].to(self.device)
 
         current_speaker = 'A'
         token_type_ids = [[]]
@@ -202,5 +207,5 @@ class GPT(torch.nn.Module):
             token_type_ids[0].append(
                 0 if current_speaker == 'A' else 1)
 
-        output['token_type_ids'] = torch.tensor(token_type_ids).to(self.config.device)
+        output['token_type_ids'] = torch.tensor(token_type_ids).to(self.device)
         return output
