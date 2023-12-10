@@ -30,20 +30,18 @@ def build_logger():
 def build_parser():
     parser = argparse.ArgumentParser(
         description="Bespoke Tart model used to predict turn-taking from linguistic features")
-    parser.add_argument('--cuda', type=str, default='true',
+    parser.add_argument('--cuda', action="store_true",
                         help="true/false if cuda should be enabled")
-    parser.add_argument('--load-model', type=str, default='false',
+    parser.add_argument('--load-model', action="store_true",
                         help="true/false if model should be loaded")
     parser.add_argument('--load-path', type=str, default='trained_model/',
                         help="load model config and weights from this file and ignore input configurations")
     parser.add_argument('--save-path', type=str, default='trained_model/',
                         help="model weights and config options save directory")
 
-    parser.add_argument('--bert-type', type=str, default='bert',
-                        help="choose which BERT version to use (bert, distilbert)")
-    parser.add_argument('--bert-finetuning', type=str, default='false',
+    parser.add_argument('--finetune', action="store_true",
                         help='true/false if BERT should be finetuned')
-    parser.add_argument('--bert-pretraining', type=str,
+    parser.add_argument('--pretrained', type=str,
                         default='bert-base-uncased',
                         help="name of pretrained BERT model")
 
@@ -54,30 +52,34 @@ def build_parser():
     parser.add_argument('--early-stop', type=int, default=5,
                         help='number of iterations without improvement for early stop')
 
-    parser.add_argument('--evaluate', type=str, default='false',
+    parser.add_argument('--evaluate', action='store_true',
                         help='model should only be evaluated. load-model and load-path should be set')
 
     parser.add_argument('--description', type=str, default='',
                         help="description of model")
 
-    parser.add_argument('--loss-weight', type=float, default=1.355,
-                        help="for binary classification and weighting EOTs")
-    parser.add_argument('--output-window', type=int, default=5,
-                        help="number of tokens to determine label in binary classification")
-    parser.add_argument('--context-window', type=int, default=2,
-                        help="number of full turns to be used in the prior context")
-    parser.add_argument('--max-prior-window', type=int, default=300,
-                        help="number of tokens to be used as a max in the prior context")
+
 
     # Wandb
     parser.add_argument('--log_interval', type=int, default=100,
                         help="frequency with which to report logs to wandb")
 
     # Dataset
-    parser.add_argument('--overwrite', type=str, default="false",
+    parser.add_argument('--overwrite', action='store_true',
                         help="overwrite and regenerate dataset")
     parser.add_argument('--dev-mode', action='store_true',
                         help="decrease dataset size to test post-processing steps")
+    parser.add_argument('--datasets', nargs="+", help="Datasets to use",
+                        default=["switchboard", "fisher"])
+    parser.add_argument('--max-length', type=int, default=256,
+                        help="max length of a sequence")
+    parser.add_argument('--keep-length', type=int, default=64,
+                        help="minimum length of a sequence")
+    parser.add_argument('--overlap-length', type=int, default=10,
+                        help="number of tokens to overlap between sequences")
+
+    parser.add_argument('--speaker-tokens', action="store_true",
+                        help="add speaker tokens as token type ids")
 
     return parser.parse_args()
 
@@ -98,32 +100,6 @@ def get_latest_model(path):
         raise RuntimeError("model file not found")
     return os.path.join(path, latest_model)
 
-
-def collate_fn(batch):
-    batched_data = {'input': None, 'output': None}
-    for key in ['input', 'output']:
-        input_ids = [item[key]['input_ids'] for item in batch]
-        attention_masks = [item[key]['attention_mask'] for item in batch]
-        token_type_ids = [item[key]['token_type_ids'] for item in batch]
-
-        input_ids_padded = torch.nn.utils.rnn.pad_sequence(
-            input_ids, batch_first=True, padding_value=0)
-        attention_masks_padded = torch.nn.utils.rnn.pad_sequence(
-            attention_masks, batch_first=True, padding_value=0)
-        token_type_ids_padded = torch.nn.utils.rnn.pad_sequence(
-            token_type_ids, batch_first=True, padding_value=0)
-
-        if key == 'input':
-            batched_data = {'input_ids': input_ids_padded,
-                            'attention_mask': attention_masks_padded,
-                            'token_type_ids': token_type_ids_padded}
-        else:
-            batched_data[key] = {'input_ids': input_ids_padded,
-                                 'attention_mask': attention_masks_padded,
-                                 'token_type_ids': token_type_ids_padded}
-    return batched_data
-
-
 def main(config):
     # model = Bert(
     #    pretrained_model_name='bert-base-uncased',
@@ -135,7 +111,7 @@ def main(config):
     if not config.dev_mode:
         wandb.init(config=config)
 
-    if config.load_model == 'true':
+    if config.load_model:
         load_path = get_abs_path(config.load_path)
         logging.getLogger(__name__).info(
             f"model: loading model from {load_path}")
@@ -147,17 +123,13 @@ def main(config):
 
         logging.getLogger(__name__).info(f"Loaded config: {config}")
 
-    if config.bert_type == 'bert':
-        bert_finetuning = True if config.bert_finetuning == 'true' else False
-        logging.getLogger(__name__).info(f"Loaded model: gpt with finetuning: {bert_finetuning}")
-        model = GPT(pretrained_model_name=config.bert_pretraining, bert_finetuning=bert_finetuning, config=config)
-    else:
-        logging.getLogger(__name__).info(
-            f"Loaded model: invalid bert name {config.bert_type}. loaded distilbert")
-        model = GPT(
-            bert_finetuning=True if config.bert_finetuning == 'true' else False,
-            config=config,
-        )
+    logging.getLogger(__name__).info(f"Loaded model: gpt with finetuning: {config.finetune}")
+    model = GPT(
+        pretrained_model_name=config.pretrained,
+        finetune=config.finetune,
+        device=config.device,
+        speaker_tokens=config.speaker_tokens
+    )
 
     model.to(config.device)
 
@@ -166,19 +138,31 @@ def main(config):
     criterion = torch.nn.CrossEntropyLoss().to(config.device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate) #, weight_decay=config.weight_decay)
 
-    if (config.load_model == 'true'):
-        trainer = Trainer(model=model, criterion=criterion,
-                          optimizer=optimizer, config=config,
-                          load_from_checkpoint=get_latest_model(load_path))
+    if config.load_model:
+        trainer = Trainer(model=model,
+                          criterion=criterion,
+                          optimizer=optimizer,
+                          config=config,
+                          load_from_checkpoint=get_latest_model(load_path),
+                          **vars(config)
+                    )
     else:
-        trainer = Trainer(model=model, criterion=criterion,
-                          optimizer=optimizer, config=config)
+        trainer = Trainer(model=model,
+                          criterion=criterion,
+                          optimizer=optimizer,
+                          config=config,
+                          **vars(config)
+                    )
 
-    if config.evaluate == 'false':
+    if not config.evaluate:
         train_ds = GenerationDM(
                 split="train",
                 tokenizer=model.get_tokenizer(),
-                overwrite=True if config.overwrite == 'true' else False,
+                overwrite=config.overwrite,
+                max_length=config.max_length,
+                keep_length=config.keep_length,
+                overlap_length=config.overlap_length,
+                datasets=config.datasets,
             )
         train_ds.prepare_data()
         train_dl = DataLoader(
@@ -191,7 +175,11 @@ def main(config):
         test_ds = GenerationDM(
             split="test",
             tokenizer=model.get_tokenizer(),
-            overwrite=True if config.overwrite == 'true' else False,
+            overwrite=config.overwrite,
+            max_length=config.max_length,
+            keep_length=config.keep_length,
+            overlap_length=config.overlap_length,
+            datasets=config.datasets,
         )
         test_ds.prepare_data()
         test_dl = DataLoader(
@@ -211,7 +199,11 @@ def main(config):
         test_ds = GenerationDM(
             split="test",
             tokenizer=model.get_tokenizer(),
-            overwrite=True if config.overwrite == 'true' else False,
+            overwrite=True if config.overwrite else False,
+            max_length=config.max_length,
+            keep_length=config.keep_length,
+            overlap_length=config.overlap_length,
+            datasets=config.datasets,
         )
         test_ds.prepare_data()
         test_dl = DataLoader(
@@ -238,7 +230,7 @@ if __name__ == "__main__":
 
     config = build_parser()
     config.device = "cuda" if torch.cuda.is_available() and (
-        config.cuda == "true") else "cpu"
+        config.cuda) else "cpu"
 
     build_logger()
 
