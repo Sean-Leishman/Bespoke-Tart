@@ -31,15 +31,21 @@ class SwitchboardDataset(Dataset):
 
         self.split = split
 
-        self.filenames = self.read_file_splits()
-        self.dialogs = self.read_dialog()
-        # self.tokens = self.tokenize()
+
 
     def __len__(self):
         return len(self.dialogs)
 
     def __getitem__(self, idx):
         return self.dialogs[idx]
+
+    def __str__(self):
+        return "Switchboard"
+
+    def __call__(self):
+        self.filenames = self.read_file_splits()
+        self.dialogs = self.read_dialog()
+        # self.tokens = self.tokenize()
 
     def read_file_splits(self):
         self.logger.info(f"data: reading {self.split} data")

@@ -6,6 +6,7 @@ from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 
 from sklearn.model_selection import train_test_split
+from .utils import extract_dialog, remove_overlaps, combine_dialogue_without_timings, combine_consecutive_trps
 
 def get_abs_path(filepath):
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), filepath)
@@ -22,8 +23,7 @@ class FisherDataset(Dataset):
         self.logger = logging.getLogger(__name__)
         self.split = split
 
-        self.filenames = self.read_file_splits()
-        #self.dialogs = self.read_dialog()
+        
 
     def __len__(self):
         return len(self.dialogs)
@@ -31,14 +31,24 @@ class FisherDataset(Dataset):
     def __getitem__(self, idx):
         return self.dialogs[idx]
 
+    def __call__(self):
+        self.filenames = self.read_file_splits()
+        self.dialogs = self.read_dialog()
+
+    def __str__(self):
+        return "Fisher"
 
     def read_dialog(self):
         self.logger.info(f"fisher ({self.split}): loading data")
 
         dialogs = []
-        for key in tqdm.tqdm(self.filenames):
-            dialog = extract_dialog(self.filenames[key])
+        for filename in tqdm.tqdm(self.filenames):
+            dialog = extract_dialog(filename)
 
+            dialog = combine_dialogue_without_timings(dialog)
+            dialog = remove_overlaps(dialog)
+
+            dialog = combine_consecutive_trps(dialog)
             dialogs.append(dialog)
 
         return dialogs
@@ -50,6 +60,17 @@ class FisherDataset(Dataset):
         if not os.path.isfile(filename):
             self.logger.error(f"fisher: no split for {self.split} files")
             self.generate_file_splits()
+
+        split_filenames = []
+        with open(filename) as f:
+            line = f.readline()
+            while line:
+                file = line.strip()
+
+                split_filenames.append(file)
+                line = f.readline()
+
+        return split_filenames
 
     def generate_file_splits(self):
         if not os.path.exists(get_abs_path("splits")):
