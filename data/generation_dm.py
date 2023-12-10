@@ -42,7 +42,7 @@ class GenerationDM(Dataset):
     """
     Implementation of Pytorch Dataset to load text data for transcript tasks.
 
-    Atttributes
+    Attributes
     -----------
     tokenizer: Transformers.TokenizerFast
         used to tokenize text when loading data
@@ -62,6 +62,7 @@ class GenerationDM(Dataset):
                  keep_length=64,
                  overlap_length=10,
                  dev_mode=False,
+                 datasets=["switchboard", "fisher"],
                  ):
         self.logger = logging.getLogger(__name__)
 
@@ -86,6 +87,12 @@ class GenerationDM(Dataset):
         self.overlap_length = overlap_length
 
         self.dev_mode = dev_mode
+
+        for ds in datasets:
+            if ds == "switchboard":
+                self.datasets.append(SwitchboardDataset(split=self.split))
+            elif ds == "fisher":
+                self.datasets.append(FisherDataset(split=self.split))
 
     def __len__(self):
         if self.dev_mode:
@@ -113,17 +120,17 @@ class GenerationDM(Dataset):
         if not os.path.exists(save_load_dir):
             os.mkdir(save_load_dir)
 
-        return os.path.join(save_load_dir, self.split)
+        return os.path.join(save_load_dir, "".join(str(x) for x in self.datasets) + self.split)
 
     def prepare_data(self):
         if self.load_from_cache_file or not self.overwrite:
-            self.setup()
-            return
+            # Returns false if setup fails for whatever reason
+            if self.setup():
+                return
 
-        for load_dataset in DATASETS:
-            dataset = load_dataset(split=self.split)
-            # dataset = self.filter_empty_turns(dataset)
-            self.datasets.append(dataset)
+        for ds in self.datasets:
+            # Extracts Dialog
+            ds()
 
         self.dataset = ConcatDataset(self.datasets)
         self.data = self.tokenize()
@@ -134,10 +141,16 @@ class GenerationDM(Dataset):
         self.save_to_disk()
 
     def setup(self):
-        saved_ds = torch.load(self.get_save_load_path())
-        self.dataset = saved_ds.dataset
-        self.data = saved_ds.data
-        # self.prefix_sum = self.generate_indexes()
+        filename = self.get_save_load_path()
+        try:
+            saved_ds = torch.load(filename)
+            self.dataset = saved_ds.dataset
+            self.data = saved_ds.data
+            return True
+        except FileNotFoundError as e:
+            self.logger.error(f"File not found: {filename}")
+
+        return False
 
     def save_to_disk(self):
         self.logger.info(f"data {self.split}: saving combined transcript")
@@ -196,20 +209,6 @@ class GenerationDM(Dataset):
                 result.append(copy.deepcopy(output))
 
         return result
-
-    def pad_to_length(self):
-        padded_arr = torch.ones((len(self), self.max_length))
-
-        for dialog in self.data:
-            input_ids = torch.cat([dialog['input_ids'], padded_arr])
-            attention_mask = torch.cat([dialog['attention_mask'], padded_arr])
-            token_type_ids = torch.cat([dialog['token_type_ids'], padded_arr])
-
-            input_ids = torch.nn.utils.rnn.pad_sequence(
-                [dialog['input_ids'], padded_arr], padding_value=self.tokenizer.pad_token_id,
-                )
-
-
 
 
     """
