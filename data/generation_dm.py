@@ -219,6 +219,9 @@ class GenerationDM(Dataset):
         self.logger.info(f"data ({self.split}): tokenizing data")
 
         result = []
+        speaker_1_token = self.tokenizer.convert_tokens_to_ids('<speaker1>')
+        speaker_2_token = self.tokenizer.convert_tokens_to_ids('<speaker2>')
+
         for dataset in self.dataset:
             output = {}
             dialog = [dialog['text'] for dialog in dataset]
@@ -238,7 +241,7 @@ class GenerationDM(Dataset):
                     current_speaker = 'A' if current_speaker == 'B' else 'B'
 
                 token_type_ids[0].append(
-                    0 if current_speaker == 'A' else 1)
+                    speaker_1_token if current_speaker == 'A' else speaker_2_token)
 
             output['token_type_ids'] = torch.tensor(token_type_ids)
             result.append(output)
