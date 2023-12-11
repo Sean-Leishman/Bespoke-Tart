@@ -79,7 +79,7 @@ def extract_dialog(path: str):
         start = float(split_row[0])
         end = float(split_row[1])
         speaker = split_row[2].replace(":", "")
-        channel = 'A' if speaker == 'A' else 'B'
+        channel = 0 if speaker == 'A' else 1
         text = " ".join(split_row[3:])
 
         text = regexp(text, remove_restarts=True)
@@ -90,7 +90,7 @@ def extract_dialog(path: str):
             "start": start,
             "end": end,
             "text": text,
-            "speaker": channel,
+            "speaker": speaker,
         })
     return anno
 

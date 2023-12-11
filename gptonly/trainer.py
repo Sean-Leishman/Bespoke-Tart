@@ -231,6 +231,7 @@ class Trainer:
             token_type_ids = batch["token_type_ids"].to(self.device)
 
             labels = self.generate_labels(input_ids, mask=attention_mask)
+            projection_labels = self.generate_projection_labels(input_ids, mask=attention_mask)
 
             out = self.model.forward(
                 input_ids, labels=labels, attention_mask=attention_mask, token_type_ids=token_type_ids)
@@ -266,25 +267,7 @@ class Trainer:
 
         return metrics
 
-    def generate_labels(self, input_ids, mask=None, pad_id=-100):
-        labels = input_ids.clone()
-        labels[torch.logical_not(mask)] = pad_id
 
-        return labels
-
-    def calculate_loss(self, output, labels, padding=None):
-        mask = torch.ones(labels.shape).to(self.device)
-        if padding is not None:
-            mask = padding
-
-        output = output[:, :100].contiguous()
-
-        self.criterion.reduction = "none"
-        loss = self.criterion(output.view(-1, output.size(-1)), labels.view(-1))
-        loss = loss.view(labels.shape)
-
-        loss *= mask
-        return loss.sum() / mask.sum()
 
     def validate(self, test_dl):
         total_loss, total_count = 0, 0
@@ -302,6 +285,7 @@ class Trainer:
                 token_type_ids = batch['token_type_ids'].to(self.device)
 
                 labels = self.generate_labels(input_ids, mask=attention_mask)
+                projection_labels = self.generate_projection_labels(labels)
                 out = self.model.forward(
                     input_ids, labels=labels, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
@@ -329,6 +313,42 @@ class Trainer:
         self.model.train()
 
         return metrics
+
+    def generate_labels(self, input_ids, mask=None, pad_id=-100):
+        labels = input_ids.clone()
+        labels[torch.logical_not(mask)] = pad_id
+
+        return labels
+
+    def generate_projection_labels(self, labels):
+        batch_size, num_labels = labels.size()
+        distances = torch.full_like(labels, num_labels)
+
+        target_positions = (labels == self.model.tokenizer.eos_token_id).long()
+        rolling_max_positions = torch.flip(torch.cummax(torch.flip(target_positions, [1]), dim=1).values, [1])
+
+        target_distances = torch.arange(num_labels, device=labels.device).expand_as(labels)
+        distances[target_positions.bool()] = torch.where(rolling_max_positions.bool(), target_distances - rolling_max_positions * target_distances, num_labels)
+
+        not_target = 1 - target_positions
+        distances *= not_target
+        distances += not_target.cumsum(dim=1) * target_positions
+
+        return distances
+
+    def calculate_loss(self, output, labels, padding=None):
+        mask = torch.ones(labels.shape).to(self.device)
+        if padding is not None:
+            mask = padding
+
+        output = output[:, :100].contiguous()
+
+        self.criterion.reduction = "none"
+        loss = self.criterion(output.view(-1, output.size(-1)), labels.view(-1))
+        loss = loss.view(labels.shape)
+
+        loss *= mask
+        return loss.sum() / mask.sum()
 
     def add_to_bacc(self, logits, labels):
         probs = logits.softmax(dim=-1)

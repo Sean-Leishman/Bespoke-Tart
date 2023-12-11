@@ -54,16 +54,12 @@ class GPT(torch.nn.Module):
 
         self.tokenizer = SpokenDialogTokenizer()
         self.init_tokenizer()
-        # self.gpt.resize_token_embeddings(new_num_tokens=len(self.tokenizer))
 
         update_params = ["embd_pdrop", "attn_pdrop", "resid_pdrop"]
         if not finetune:
             self.logger.info('model: bert parameters frozen')
             for param in self.parameters():
                 param.requires_grad = True
-
-
-
 
     @torch.no_grad()
     def get_loss_weight(self):
