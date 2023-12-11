@@ -20,4 +20,12 @@ Large amount of changes in order to align with TurnGPT:
 - Updated step between consecutive sequences as previously each index corresponded to the next token in a sequence now consider overla of 10 tokens between two sequences
 - Using Wandb to plot results and plot probability of TRP
 - Updated tokenization such that `eos_token` is now `[SEP]` for a turn shift and a `pad_token` is `<end_of_text>`.
-- 
+
+
+## TODO
+- Experiment with:
+  - Analyse % of overlap and interruptions - primarily within Switchboard
+  - With TRP projection multitask learning
+  - Speaker token IDs with/without and make clear in description
+  - Different overlaps and lr
+  - Check performance with BERTLM only
