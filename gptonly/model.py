@@ -25,6 +25,7 @@ class GPT(torch.nn.Module):
                  pretrained_model_name="gpt2",
                  finetune=True,
                  speaker_tokens=True,
+                 projection_labels=True,
                  weight_regular_token=0.5,
                  weight_eos_token=1.0,
                  device=None,
@@ -35,6 +36,7 @@ class GPT(torch.nn.Module):
 
         self.device = device
         self.include_speaker_tokens = speaker_tokens
+        self.include_projection_labels = projection_labels
 
         """
         self.bert = BertModel.from_pretrained(pretrained_model_name)
@@ -72,6 +74,9 @@ class GPT(torch.nn.Module):
     def forward(self, input_ids, attention_mask=None, token_type_ids=None, labels=None, projection_labels=None):
         if not self.include_speaker_tokens:
             token_type_ids = None
+
+        if not self.include_projection_labels:
+            projection_labels = None
 
         out = self.gpt.transformer(
             input_ids,

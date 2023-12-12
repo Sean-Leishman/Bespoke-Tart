@@ -231,10 +231,10 @@ class Trainer:
             token_type_ids = batch["token_type_ids"].to(self.device)
 
             labels = self.generate_labels(input_ids, mask=attention_mask)
-            projection_labels = self.generate_projection_labels(input_ids, mask=attention_mask)
+            projection_labels = self.generate_projection_labels(labels)
 
             out = self.model.forward(
-                input_ids, labels=labels, attention_mask=attention_mask, token_type_ids=token_type_ids)
+                input_ids, labels=labels, projection_labels=projection_labels, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
             loss = out.loss
             loss.backward()
@@ -287,7 +287,7 @@ class Trainer:
                 labels = self.generate_labels(input_ids, mask=attention_mask)
                 projection_labels = self.generate_projection_labels(labels)
                 out = self.model.forward(
-                    input_ids, labels=labels, attention_mask=attention_mask, token_type_ids=token_type_ids)
+                    input_ids, labels=labels, projection_labels=projection_labels, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
                 loss = out.loss
                 total_loss += loss.item()
@@ -322,17 +322,13 @@ class Trainer:
 
     def generate_projection_labels(self, labels):
         batch_size, num_labels = labels.size()
-        distances = torch.full_like(labels, num_labels)
 
-        target_positions = (labels == self.model.tokenizer.eos_token_id).long()
-        rolling_max_positions = torch.flip(torch.cummax(torch.flip(target_positions, [1]), dim=1).values, [1])
+        mask = (labels == self.model.tokenizer.eos_token_id)
+        distances = torch.full((batch_size, num_labels), num_labels, device=labels.device)
+        distances[mask] = 0
 
-        target_distances = torch.arange(num_labels, device=labels.device).expand_as(labels)
-        distances[target_positions.bool()] = torch.where(rolling_max_positions.bool(), target_distances - rolling_max_positions * target_distances, num_labels)
-
-        not_target = 1 - target_positions
-        distances *= not_target
-        distances += not_target.cumsum(dim=1) * target_positions
+        for i in range(num_labels - 2, -1, -1):
+            distances[:,i] = torch.minimum(distances[:,i], distances[:, i+1] + 1)
 
         return distances
 

@@ -80,6 +80,8 @@ def build_parser():
 
     parser.add_argument('--speaker-tokens', action="store_true",
                         help="add speaker tokens as token type ids")
+    parser.add_argument('--projection-labels', action='store_true',
+                        help="add projection labels and convert to multitask learning")
 
     return parser.parse_args()
 
