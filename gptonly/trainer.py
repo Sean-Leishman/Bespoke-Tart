@@ -40,6 +40,7 @@ class Trainer:
                  log_interval=None,
                  save_path="./",
                  early_stop=5,
+                 dev_mode=False,
                  config=None,
                  **kwargs,
             ):
@@ -52,6 +53,7 @@ class Trainer:
         self.log_interval = log_interval
 
         self.epoch = 0
+        self.dev_mode = dev_mode
 
         self.train_history = {}
         self.test_history = {}
@@ -237,6 +239,9 @@ class Trainer:
                 input_ids, labels=labels, projection_labels=projection_labels, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
             loss = out.loss
+            if out.mc_loss is not None:
+                loss = out.loss + out.mc_loss
+
             loss.backward()
             self.optimizer.step()
 
@@ -301,10 +306,12 @@ class Trainer:
             metrics['avg_loss'] = total_loss / len(test_dl)
 
             metrics['bacc'] = self.compute_bacc()
-            self.generate_on_validation_set(input_ids, mask=attention_mask, speaker_ids=token_type_ids)
-            wandb.log({"val_loss": round(total_loss / len(test_dl), 4),
-                       "global_step": self.global_step,
-                       "bacc": metrics['bacc']})
+
+            if not self.dev_mode:
+                self.generate_on_validation_set(input_ids, mask=attention_mask, speaker_ids=token_type_ids)
+                wandb.log({"val_loss": round(total_loss / len(test_dl), 4),
+                           "global_step": self.global_step,
+                           "bacc": metrics['bacc']})
 
             progress_bar.disable = False
             progress_bar.set_postfix_str(self.metric_output(metrics))

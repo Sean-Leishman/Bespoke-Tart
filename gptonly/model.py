@@ -93,10 +93,10 @@ class GPT(torch.nn.Module):
         if labels is not None:
             loss = self.cross_entropy_loss(lm_logits, labels)
 
-        projection_logits = self.trp_projection_head(out.hidden_states[-1])
+        projection_logits = self.trp_projection_head(hidden_states)
         projection_loss = None
         if projection_labels is not None:
-            projection_loss = self.bce_loss(projection_logits, projection_labels)
+            projection_loss = self.bce_loss(projection_logits.squeeze(-1), projection_labels)
 
         return GPT2DoubleHeadsModelOutput(
             loss=loss,
@@ -133,8 +133,8 @@ class GPT(torch.nn.Module):
 
         indicies = shift_labels != -100
         loss = loss_fct(
-            torch.masked_select(shift_logits, indicies),
-            torch.masked_select(shift_labels, indicies)
+            torch.masked_select(shift_logits, indicies).float(),
+            torch.masked_select(shift_labels, indicies).float()
         )
 
         return loss

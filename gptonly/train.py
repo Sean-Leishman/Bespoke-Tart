@@ -68,7 +68,7 @@ def build_parser():
     parser.add_argument('--overwrite', action='store_true',
                         help="overwrite and regenerate dataset")
     parser.add_argument('--dev-mode', action='store_true',
-                        help="decrease dataset size to test post-processing steps")
+                        help="decrease dataset size to test post-processing steps/disable writing to wandb")
     parser.add_argument('--datasets', nargs="+", help="Datasets to use",
                         default=["switchboard", "fisher"])
     parser.add_argument('--max-length', type=int, default=256,
@@ -111,7 +111,14 @@ def main(config):
     logging.getLogger(__name__).info("model: initialising model")
 
     if not config.dev_mode:
-        wandb.init(config=config)
+        name = input("Enter new change(s) for wandb run: ")
+        if name == "":
+            name = None
+
+        wandb.init(
+            config=config,
+            name=name
+        )
 
     if config.load_model:
         load_path = get_abs_path(config.load_path)
@@ -130,7 +137,8 @@ def main(config):
         pretrained_model_name=config.pretrained,
         finetune=config.finetune,
         device=config.device,
-        speaker_tokens=config.speaker_tokens
+        speaker_tokens=config.speaker_tokens,
+        projection_labels=config.projection_labels,
     )
 
     model.to(config.device)
