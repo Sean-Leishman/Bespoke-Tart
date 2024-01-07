@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # shellcheck disable=SC1101
-python gptonly/train.py --description "gptonly" \
---learning-rate 0.0001 --batch-size 6  --output-window 5 --bert-pretraining "gpt2" \
---bert-finetuning "true" --evaluate "true" --load-model "true" --load-path "trained_model/2023-11-10:18-52-29"
+python gptonly/train.py --description "increase switchboard size" \
+--learning-rate 0.00002 --batch-size 4  --pretrained "gpt2" \
+--finetune --cuda --datasets "switchboard" --speaker-tokens \
+--dev-mode --evaluate --load-model --load-path "trained_model/2024-01-07:12-50-45"

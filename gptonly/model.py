@@ -20,6 +20,7 @@ from tokenizers.normalizers import (
 
 from gptonly.tokenizer import SpokenDialogTokenizer
 
+
 class GPT(torch.nn.Module):
     def __init__(self,
                  pretrained_model_name="gpt2",
@@ -30,7 +31,7 @@ class GPT(torch.nn.Module):
                  weight_eos_token=1.0,
                  device=None,
                  **kwargs,
-            ):
+                 ):
         super(GPT, self).__init__()
         self.logger = logging.getLogger(__name__)
 
@@ -46,10 +47,14 @@ class GPT(torch.nn.Module):
         self.dropout = torch.nn.Dropout(p=0.1)
 
         config = GPT2Config.from_pretrained(pretrained_model_name)
-        self.gpt = GPT2LMHeadModel.from_pretrained(pretrained_model_name, config=config)
+        self.gpt = GPT2LMHeadModel.from_pretrained(
+            pretrained_model_name, config=config)
+
+        self.gpt.to(self.device)
 
         self.trp_projection_steps = 5
-        self.trp_projection_head = torch.nn.Linear(self.gpt.config.hidden_size, 1)
+        self.trp_projection_head = torch.nn.Linear(
+            self.gpt.config.hidden_size, 1)
 
         self.weight_regular_token = weight_regular_token
         self.weight_eos_token = weight_eos_token
@@ -66,7 +71,8 @@ class GPT(torch.nn.Module):
     @torch.no_grad()
     def get_loss_weight(self):
         weight = (
-            torch.ones(len(self.tokenizer), dtype=torch.float) * self.weight_regular_token
+            torch.ones(len(self.tokenizer), dtype=torch.float) *
+            self.weight_regular_token
         )
         weight[self.tokenizer.eos_token_id] = self.weight_eos_token
         return weight.to(self.device)
@@ -96,7 +102,8 @@ class GPT(torch.nn.Module):
         projection_logits = self.trp_projection_head(hidden_states)
         projection_loss = None
         if projection_labels is not None:
-            projection_loss = self.bce_loss(projection_logits.squeeze(-1), projection_labels)
+            projection_loss = self.bce_loss(
+                projection_logits.squeeze(-1), projection_labels)
 
         return GPT2DoubleHeadsModelOutput(
             loss=loss,
@@ -112,7 +119,8 @@ class GPT(torch.nn.Module):
         weight = self.get_loss_weight()
 
         loss_fct = torch.nn.CrossEntropyLoss(weight=weight, reduction="none")
-        other_loss_fct = torch.nn.CrossEntropyLoss(weight=None, reduction="none")
+        other_loss_fct = torch.nn.CrossEntropyLoss(
+            weight=None, reduction="none")
         shift_logits = logits[..., :-1, :].contiguous()
         shift_labels = labels[..., 1:].contiguous()
 
@@ -142,7 +150,7 @@ class GPT(torch.nn.Module):
     def generate(self, input_ids=None, speaker_ids=None, mask=None, output_scores=False, n_sequences=1):
         if input_ids is None:
             sample_output = self.gpt.generate(
-                bos_token_id=random.randint(1,30000),
+                bos_token_id=random.randint(1, 30000),
                 token_type_ids=speaker_ids,
                 do_sample=True,
                 top_k=50,
@@ -168,7 +176,7 @@ class GPT(torch.nn.Module):
             )
         return sample_output
 
-    def init_tokenizer(self, tokens=['!','?', '.']):
+    def init_tokenizer(self, tokens=['!', '?', '.']):
         self.gpt.resize_token_embeddings(new_num_tokens=len(self.tokenizer))
         # self.tokenizer.sep_token_id = self.tokenizer.convert_tokens_to_ids('[SEP]')
 
@@ -187,12 +195,13 @@ class GPT(torch.nn.Module):
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser])
 
-        #self.tra May be useful to separate params
+        # self.tra May be useful to separate params
 
     def from_string(self, string):
         output = {}
         output['dialog'] = "<ts> ".join(string) + "<ts>"
-        tokens = self.tokenizer(output['dialog'], return_tensors="pt", truncation=True)
+        tokens = self.tokenizer(
+            output['dialog'], return_tensors="pt", truncation=True)
 
         output['input_ids'] = tokens['input_ids'].to(self.device)
 

@@ -13,9 +13,12 @@ from data.switchboard import SwitchboardDataset
 from data.fisher import FisherDataset
 from gptonly.tokenizer import SpokenDialogTokenizer
 
+
 def get_abs_path(filepath):
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), filepath)
 
+
+def collate_fn():
     output = {}
     input_ids = [item['input_ids'] for item in batch]
     attention_masks = [item['attention_mask'] for item in batch]
@@ -53,6 +56,7 @@ class GenerationDM(Dataset):
     overlap_length: int
         number of tokens that overlap between consecutive sequences if the total sequence exceeds maximum length
     """
+
     def __init__(self, split="train",
                  tokenizer=None,
                  savepath=None,
@@ -74,13 +78,13 @@ class GenerationDM(Dataset):
         self.split = split
 
         if savepath is None:
-            dirname = self.tokenizer.__str__()[:self.tokenizer.__str__().index("(")]
+            dirname = self.tokenizer.__str__(
+            )[:self.tokenizer.__str__().index("(")]
             savepath = os.path.join(CACHE_PATH, dirname)
         self.savepath = savepath
 
         self.overwrite = overwrite
         self.load_from_cache_file = load_from_cache_file
-
 
         self.max_length = max_length
         self.keep_length = keep_length
@@ -103,12 +107,13 @@ class GenerationDM(Dataset):
     def __getitem__(self, idx):
         return self.data[idx]
 
-    def collate_fn(self,batch):
+    def collate_fn(self, batch):
         ret = self.tokenizer.pad(
             {"input_ids": [b["input_ids"][: self.max_length] for b in batch]}
         )
         ret["token_type_ids"] = self.tokenizer.pad(
-            {"input_ids": [b["token_type_ids"][: self.max_length] for b in batch]}
+            {"input_ids": [b["token_type_ids"][: self.max_length]
+                           for b in batch]}
         )["input_ids"]
         for k, v in ret.items():
             ret[k] = v.clone().detach()
@@ -160,7 +165,7 @@ class GenerationDM(Dataset):
         dialog_idx = next(i for i, v in enumerate(
             self.prefix_sum) if v > token_idx) - 1
         token_idx = (
-                            token_idx - self.prefix_sum[dialog_idx]) * self.window_step
+            token_idx - self.prefix_sum[dialog_idx]) * self.window_step
 
         return dialog_idx, token_idx
 
@@ -168,7 +173,7 @@ class GenerationDM(Dataset):
         """
         return only dialogs with no empty turns
         """
-        for idx,dataset in enumerate(dataset):
+        for idx, dataset in enumerate(dataset):
             dialogs = []
             for dialog in dataset:
                 if not (dialog['text'] == "" or not re.search(r"\w", dialog['text'])):  # utt is empty
@@ -181,6 +186,7 @@ class GenerationDM(Dataset):
     between sequences.
     Also pads to max_length
     """
+
     def split_to_length(self):
         # Augment entirety of datasets
         result = []
@@ -210,11 +216,11 @@ class GenerationDM(Dataset):
 
         return result
 
-
     """
     Uses self.tokenizer to tokenize each dialog within a dataset and then also initialise attention mask 
     and token_type_ids as speaker_ids
     """
+
     def tokenize(self):
         self.logger.info(f"data ({self.split}): tokenizing data")
 

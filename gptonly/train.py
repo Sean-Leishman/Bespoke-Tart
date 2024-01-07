@@ -21,6 +21,7 @@ from transformers.optimization import get_linear_schedule_with_warmup
 
 import wandb
 
+
 def build_logger():
     logging.basicConfig(format='%(asctime)s - %(message)s',
                         datefmt='%d-%b-%y %H:%M:%S', level=logging.INFO)
@@ -58,8 +59,6 @@ def build_parser():
     parser.add_argument('--description', type=str, default='',
                         help="description of model")
 
-
-
     # Wandb
     parser.add_argument('--log_interval', type=int, default=100,
                         help="frequency with which to report logs to wandb")
@@ -86,7 +85,6 @@ def build_parser():
     return parser.parse_args()
 
 
-
 def get_latest_model(path):
     list_dir = os.listdir(path)
     latest_model = None
@@ -101,6 +99,7 @@ def get_latest_model(path):
     if latest_model is None:
         raise RuntimeError("model file not found")
     return os.path.join(path, latest_model)
+
 
 def main(config):
     # model = Bert(
@@ -132,7 +131,8 @@ def main(config):
 
         logging.getLogger(__name__).info(f"Loaded config: {config}")
 
-    logging.getLogger(__name__).info(f"Loaded model: gpt with finetuning: {config.finetune}")
+    logging.getLogger(__name__).info(
+        f"Loaded model: gpt with finetuning: {config.finetune}")
     model = GPT(
         pretrained_model_name=config.pretrained,
         finetune=config.finetune,
@@ -146,7 +146,8 @@ def main(config):
     # criterion = torch.nn.BCEWithLogitsLoss(
     #    pos_weight=torch.FloatTensor([config.loss_weight]).to(config.device))
     criterion = torch.nn.CrossEntropyLoss().to(config.device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate) #, weight_decay=config.weight_decay)
+    # , weight_decay=config.weight_decay)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
 
     if config.load_model:
         trainer = Trainer(model=model,
@@ -155,25 +156,25 @@ def main(config):
                           config=config,
                           load_from_checkpoint=get_latest_model(load_path),
                           **vars(config)
-                    )
+                          )
     else:
         trainer = Trainer(model=model,
                           criterion=criterion,
                           optimizer=optimizer,
                           config=config,
                           **vars(config)
-                    )
+                          )
 
     if not config.evaluate:
         train_ds = GenerationDM(
-                split="train",
-                tokenizer=model.get_tokenizer(),
-                overwrite=config.overwrite,
-                max_length=config.max_length,
-                keep_length=config.keep_length,
-                overlap_length=config.overlap_length,
-                datasets=config.datasets,
-            )
+            split="train",
+            tokenizer=model.get_tokenizer(),
+            overwrite=config.overwrite,
+            max_length=config.max_length,
+            keep_length=config.keep_length,
+            overlap_length=config.overlap_length,
+            datasets=config.datasets,
+        )
         train_ds.prepare_data()
         train_dl = DataLoader(
             train_ds,
@@ -230,13 +231,14 @@ def main(config):
                 "model: model is not being loaded")
             return None
 
-        history = trainer.validate(test_dl)
+        history = trainer.evaluate(test_dl)
 
     return history
 
 
 if __name__ == "__main__":
-    warnings.filterwarnings(action="ignore", category=DeprecationWarning, module="transformers")
+    warnings.filterwarnings(
+        action="ignore", category=DeprecationWarning, module="transformers")
 
     config = build_parser()
     config.device = "cuda" if torch.cuda.is_available() and (
