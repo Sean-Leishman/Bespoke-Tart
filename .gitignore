@@ -7,6 +7,7 @@ data/maptask/parsed_transcripts
 data/edacc/data 
 data/switchboard/splits/data
 data/switchboard/switchboard
+data/fisher/fisher
 model/
 *.egg-info/
 build/
