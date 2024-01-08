@@ -308,6 +308,7 @@ class Trainer:
 
     def evaluate(self, test_dl):
         self.model.eval()
+        outputs = []
 
         with torch.no_grad():
             for step, batch in enumerate(test_dl):
@@ -320,8 +321,15 @@ class Trainer:
                 out = self.model.forward(
                     input_ids, labels=labels, projection_labels=projection_labels, attention_mask=attention_mask, token_type_ids=token_type_ids)
 
-                if self.is_not_trp_example(out.logits, labels):
-                    print(labels)
+                
+                probs = out.logits.softmax(dim=-1)
+                trp_prob = probs[..., self.model.tokenizer.eos_token_id]
+                trp_prob = trp_prob[..., :-1]
+                
+                labels = labels[..., 1:]
+                is_trp = labels == self.model.tokenizer.eos_token_id
+                not_trp = labels != self.model.tokenizer.eos_token_id
+                
 
     def validate(self, test_dl):
         total_loss, total_count = 0, 0
@@ -451,7 +459,7 @@ class Trainer:
         is_trp = labels == self.model.tokenizer.eos_token_id
         not_trp = labels != self.model.tokenizer.eos_token_id
 
-        return torch.max(trp_prob - is_trp).item() > 0.5
+        return torch.max(trp_prob - is_trp.long()).item() > 0.5
 
     def save_training(self, path):
         # self.model.tokenizer.save_pretrained(os.path.join(os.path.dirname(path), "tokenizer"))
