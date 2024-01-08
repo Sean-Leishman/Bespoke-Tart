@@ -1,4 +1,3 @@
-## The following requirements were added by pip freeze:
 absl-py==2.0.0
 aiohttp @ file:///croot/aiohttp_1694181079612/work
 aiosignal @ file:///tmp/build/80754af9/aiosignal_1637843061372/work
@@ -7,7 +6,7 @@ asttokens @ file:///opt/conda/conda-bld/asttokens_1646925590279/work
 async-timeout @ file:///opt/conda/conda-bld/async-timeout_1664876359750/work
 attrs @ file:///croot/attrs_1695717823297/work
 backcall @ file:///home/ktietz/src/ci/backcall_1611930011877/work
--e git+ssh://git@github.com/Sean-Leishman/Bespoke-Tart.git@c3263fc4328e6a2aefd5778d423a68a396e957cb#egg=bespoketart
+-e git+ssh://git@github.com/Sean-Leishman/Bespoke-Tart.git@0a4ebf514578516e4067bb42c38f4cf7c36ea82c#egg=bespoketart
 Bottleneck @ file:///opt/conda/conda-bld/bottleneck_1657175564434/work
 Brotli @ file:///tmp/abs_ecyw11_7ze/croots/recipe/brotli-split_1659616059936/work
 certifi @ file:///croot/certifi_1690232220950/work/certifi
@@ -18,7 +17,7 @@ comm @ file:///croot/comm_1671231121260/work
 contourpy @ file:///opt/conda/conda-bld/contourpy_1663827406301/work
 cryptography @ file:///croot/cryptography_1694444244250/work
 cycler @ file:///tmp/build/80754af9/cycler_1637851556182/work
--e git+ssh://git@github.com/Sean-Leishman/Bespoke-Tart.git@c3263fc4328e6a2aefd5778d423a68a396e957cb#egg=data&subdirectory=data
+-e git+ssh://git@github.com/Sean-Leishman/Bespoke-Tart.git@0a4ebf514578516e4067bb42c38f4cf7c36ea82c#egg=data&subdirectory=data
 datasets @ file:///croot/datasets_1684482929171/work
 debugpy @ file:///croot/debugpy_1690905042057/work
 decorator @ file:///opt/conda/conda-bld/decorator_1643638310831/work
