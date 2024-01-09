@@ -182,7 +182,8 @@ class GPT(torch.nn.Module):
 
         ts = self.tokenizer.eos_token_id
         with torch.no_grad():
-            ids = torch.tensor(self.tokenizer.convert_tokens_to_ids(tokens))
+            ids = torch.tensor(
+                self.tokenizer.convert_tokens_to_ids(tokens)).to(self.device)
             avg_emb = self.gpt.transformer.wte(ids).mean(0)
             self.gpt.transformer.wte.weight.data[ts] = avg_emb
 
